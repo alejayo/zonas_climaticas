@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { ActionState, CatastroData } from '@/lib/types';
@@ -57,7 +58,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres)
+    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres) para dirección y año exactos
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -66,13 +67,13 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
         if (pc1 && pc2) {
             const childRef14 = pc1 + pc2;
-            // Consultamos la completa de 20 si es posible
             const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef14}`;
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
                 
-                // Construimos la RC de 20 caracteres completa
+                // Construimos la RC de 20 caracteres completa si está disponible
+                // En Consulta_DNPRC, si es un inmueble concreto, los tags car, cc1, cc2 están presentes
                 const car = parseXmlTag(childXml, 'car');
                 const cc1 = parseXmlTag(childXml, 'cc1');
                 const cc2 = parseXmlTag(childXml, 'cc2');
@@ -80,7 +81,27 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                 if (car && cc1 && cc2) {
                     finalRef = pc1 + pc2 + car + cc1 + cc2;
                 } else {
-                    finalRef = childRef14;
+                    // Si no, intentamos sacar la primera RC de la lista (vrc)
+                    const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
+                    if (firstRcMatch) {
+                        const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
+                        const firstPc2 = parseXmlTag(firstRcMatch[0], 'pc2');
+                        const firstCar = parseXmlTag(firstRcMatch[0], 'car');
+                        const firstCc1 = parseXmlTag(firstRcMatch[0], 'cc1');
+                        const firstCc2 = parseXmlTag(firstRcMatch[0], 'cc2');
+                        if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
+                            finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
+                            
+                            // Re-consultamos los datos de esa RC específica para obtener dirección y año correctos
+                            const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
+                            const specificRes = await fetch(specificDataUrl, fetchOptions);
+                            if (specificRes.ok) {
+                                const specificXml = await specificRes.text();
+                                address = parseXmlTag(specificXml, 'ldt') || address;
+                                constructionYear = parseXmlTag(specificXml, 'ant') || constructionYear;
+                            }
+                        }
+                    }
                 }
 
                 const childAddress = parseXmlTag(childXml, 'ldt');
@@ -111,7 +132,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: finalRef, // Ahora devolvemos la de 20 caracteres si se encontró
+        ref: finalRef, 
         address: address || 'No disponible',
         municipality,
         province,
