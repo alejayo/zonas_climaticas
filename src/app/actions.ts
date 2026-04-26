@@ -9,7 +9,6 @@ const CATASTRO_RC_BY_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWL
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/reverseGeocode';
 
-// GVA WFS Services
 const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
@@ -137,9 +136,7 @@ export async function getFullData(displayRef: string, latitude: number, longitud
     let address = null;
     let constructionYear = null;
 
-    // Lógica para obtener datos de un "hijo" (inmueble específico) si se busca por parcela (14 chars)
     if (displayRef.length === 14) {
-        // Buscamos el primer inmueble (rc) dentro del XML de la parcela para extraer su RC completa
         const firstRcMatch = motherDataXml.match(/<rc>([\s\S]*?)<\/rc>/i);
         if (firstRcMatch) {
             const pc1 = parseXmlValue(firstRcMatch[1], 'pc1');
@@ -153,7 +150,6 @@ export async function getFullData(displayRef: string, latitude: number, longitud
         }
     }
 
-    // Consultamos los datos específicos del inmueble final para obtener Dirección y Año de construcción
     const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
     const childDataRes = await fetch(childDataUrl, fetchOptions);
     if (childDataRes.ok) {
@@ -162,7 +158,6 @@ export async function getFullData(displayRef: string, latitude: number, longitud
         constructionYear = parseXmlValue(childXml, 'ant');
     }
 
-    // Fallback a los datos de la "madre" si falló la extracción específica
     if (!address) address = parseXmlValue(motherDataXml, 'ldt');
     if (!constructionYear) constructionYear = parseXmlValue(motherDataXml, 'ant');
 

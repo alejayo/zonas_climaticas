@@ -68,7 +68,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
             leafletMap.current = L.map(mapRef.current).setView([40.416775, -3.70379], 6);
             
-            // Capa CartoDB Voyager: Más limpia y sin comercios intrusivos
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
@@ -85,10 +84,7 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
-            // Solo hacemos zoom in si el zoom actual es muy bajo (búsqueda inicial)
-            // Si el usuario ya está navegando, mantenemos su nivel de zoom
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
-            
             leafletMap.current.setView(currentPos, targetZoom);
             
             if (marker.current) marker.current.remove();
