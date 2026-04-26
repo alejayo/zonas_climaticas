@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Zonas climáticas España',
+  title: 'DB HE. Zonas climáticas',
   description: 'Análisis geográfico integral y consulta de datos técnicos de edificación en España.',
 };
 
