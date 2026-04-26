@@ -30,7 +30,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         }
     };
 
-    // 1. Obtener datos de la referencia madre (14 caracteres)
+    // 1. Obtener datos de la referencia madre (municipio, provincia, etc.)
     const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${displayRef.substring(0, 14)}`;
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
         fetch(motherDataUrl, fetchOptions),
@@ -41,30 +41,32 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
     const motherDataXml = await motherDataRes.text();
     
-    const address = parseXmlTag(motherDataXml, 'ldt');
+    let address = parseXmlTag(motherDataXml, 'ldt');
+    let constructionYear = parseXmlTag(motherDataXml, 'ant');
     const municipality = parseXmlTag(motherDataXml, 'nm');
     const province = parseXmlTag(motherDataXml, 'np');
     const postalCode = parseXmlTag(motherDataXml, 'dp');
-    let constructionYear = parseXmlTag(motherDataXml, 'ant');
     const provinceCode = parseXmlTag(motherDataXml, 'cp');
     const municipalityCode = parseXmlTag(motherDataXml, 'cm');
 
-    // 2. Si no hay año de construcción (común en referencias de 14), buscamos una de 20 para obtenerlo
-    if (!constructionYear) {
-        const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
-        const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
-        if (rcCoordsRes.ok) {
-            const rcCoordsXml = await rcCoordsRes.text();
-            const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
-            const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
-            if (pc1 && pc2) {
-                const childRef = pc1 + pc2;
-                const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef}`;
-                const childDataRes = await fetch(childDataUrl, fetchOptions);
-                if (childDataRes.ok) {
-                    const childXml = await childDataRes.text();
-                    constructionYear = parseXmlTag(childXml, 'ant');
-                }
+    // 2. Buscar silenciosamente una referencia "hija" (20 caracteres) para obtener dirección específica y año
+    const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
+    const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
+    if (rcCoordsRes.ok) {
+        const rcCoordsXml = await rcCoordsRes.text();
+        const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
+        const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
+        if (pc1 && pc2) {
+            const childRef = pc1 + pc2;
+            const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef}`;
+            const childDataRes = await fetch(childDataUrl, fetchOptions);
+            if (childDataRes.ok) {
+                const childXml = await childDataRes.text();
+                // Priorizamos dirección y año de la hija aunque no mostremos su referencia
+                const childAddress = parseXmlTag(childXml, 'ldt');
+                const childYear = parseXmlTag(childXml, 'ant');
+                if (childAddress) address = childAddress;
+                if (childYear) constructionYear = childYear;
             }
         }
     }
@@ -113,7 +115,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     try {
         const motherRef = ref.substring(0, 14);
         
-        // Obtener coordenadas
+        // Obtener coordenadas para localizar el punto
         const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${motherRef}`;
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();
