@@ -1,4 +1,3 @@
-
 import { alternativeClimaticZones } from './alternative-climatic-zones';
 
 export const provinceIneCodes = new Map<string, string>([
@@ -93,7 +92,7 @@ const climaticZones = new Map<string, ClimaticZoneRule[]>([
     ['GERONA', [{max: 100, zone: 'C2'}, {max: 600, zone: 'D2'}, {min: 601, zone: 'E1'}]],
     ['GRANADA', [{max: 50, zone: 'A4'}, {max: 350, zone: 'B4'}, {max: 600, zone: 'C4'}, {max: 800, zone: 'C3'}, {max: 1300, zone: 'D3'}, {min: 1301, zone: 'E1'}]],
     ['GUADALAJARA', [{max: 950, zone: 'D3'}, {max: 1000, zone: 'D2'}, {min: 1001, zone: 'E1'}]],
-    ['HUELVA', [{max: 50, zone: 'A4'}, {max: 150, zone: 'B4'}, {max: 350, zone: 'B3'}, {max: 800, zone: 'C3'}, {min: 801, zone: 'D3'}]],
+    ['HUELVA', [{max: 50, zone: 'A4'}, {max: 350, zone: 'B4'}, {max: 600, zone: 'C4'}, {max: 800, zone: 'C3'}, {max: 1300, zone: 'D3'}, {min: 1301, zone: 'E1'}]],
     ['HUESCA', [{max: 200, zone: 'C3'}, {max: 400, zone: 'D3'}, {max: 700, zone: 'D2'}, {min: 701, zone: 'E1'}]],
     ['JAEN', [{max: 350, zone: 'B4'}, {max: 750, zone: 'C4'}, {max: 1250, zone: 'D3'}, {min: 1251, zone: 'E1'}]],
     ['LEON', [{zone: 'E1'}]],
@@ -174,9 +173,6 @@ export function getClimaticZone(provinceName: string, altitude: number): { zone:
     return null;
 }
 
-/**
- * Busca una zona climática alternativa en el Registro General de Documentos Reconocidos del CTE
- */
 export function getAlternativeClimaticZone(municipalityIneCode: string | null): { zone: string; municipality: string; reference: string } | null {
   if (!municipalityIneCode) return null;
   return alternativeClimaticZones.get(municipalityIneCode) || null;
