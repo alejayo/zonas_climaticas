@@ -111,7 +111,7 @@ function Results({ state }: { state: ActionState }) {
                         <span className="text-4xl font-bold">{climaticZone}</span>
                     </div>
                     <div className="flex-1">
-                        <p className="text-base text-foreground">La zona climática de invierno según el CTE DB-HE es <strong>{climaticZone}</strong>.</p>
+                        <p className="text-base text-foreground">La zona climática según el CTE DB-HE es <strong>{climaticZone}</strong>.</p>
                         {climaticZoneRule && <p className="text-sm text-muted-foreground">Regla: {climaticZoneRule} a {altitude.toFixed(0)}m de altitud.</p>}
                     </div>
                 </CardContent>
