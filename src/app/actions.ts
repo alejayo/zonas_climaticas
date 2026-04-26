@@ -35,7 +35,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         }
     };
 
-    // 1. Obtener datos de la referencia para municipio/provincia
+    // 1. Obtener datos base para municipio/provincia
     const motherRef = displayRef.substring(0, 14);
     const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${motherRef}`;
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
@@ -57,13 +57,15 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    // 2. Intentar obtener una referencia de 20 caracteres para datos específicos (año y dirección exacta)
+    // 2. Forzar obtención de referencia de 20 caracteres para datos específicos (año y dirección exacta)
+    // Si la referencia es de 14 o si faltan datos críticos, buscamos la RC completa en ese punto
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
         const rcCoordsXml = await rcCoordsRes.text();
         const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
         const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
+        
         if (pc1 && pc2) {
             const childRef14 = pc1 + pc2;
             const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef14}`;
@@ -71,7 +73,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
                 
-                // Buscamos el primer bloque <rc> que suele contener car/cc1/cc2
+                // Buscamos el primer bloque <rc> para armar la de 20
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
@@ -83,7 +85,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
                         
-                        // Re-consultamos los datos de esa RC de 20 caracteres para obtener dirección y año específicos
+                        // Consultamos los datos específicos de esa RC de 20 caracteres
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {
