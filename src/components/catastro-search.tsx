@@ -194,7 +194,6 @@ export default function CatastroSearch() {
 
             <Separator />
 
-            {/* Loading & Results Overlay */}
             {(isSearching || (state.data === null && !state.error && !isSearching)) && (
                 <div className="text-center text-muted-foreground p-12 border-2 border-dashed rounded-lg bg-card/50">
                     {isSearching ? (
@@ -260,34 +259,7 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 2. Zona Climática */}
-                    {state.data.climaticZone && (
-                        <Card className="border-primary/20 bg-primary/5">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl">
-                                    <Thermometer className="text-primary h-6 w-6"/>
-                                    <span>Zona Climática (DB-HE)</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex items-center gap-6">
-                                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
-                                    <span className="text-4xl font-bold">{state.data.climaticZone}</span>
-                                </div>
-                                <div>
-                                    <p className="text-lg font-medium text-foreground">
-                                        Zona climática según CTE: <span className="font-bold">{state.data.climaticZone}</span>
-                                    </p>
-                                    {state.data.climaticZoneRule && (
-                                        <p className="text-sm text-muted-foreground mt-1 bg-background/50 p-2 rounded border inline-block">
-                                            Rango: {state.data.climaticZoneRule}
-                                        </p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* 3. Información Catastral */}
+                    {/* 2. Información Catastral */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
@@ -347,6 +319,33 @@ export default function CatastroSearch() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* 3. Zona Climática */}
+                    {state.data.climaticZone && (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-xl">
+                                    <Thermometer className="text-primary h-6 w-6"/>
+                                    <span>Zona Climática (DB-HE)</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center gap-6">
+                                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
+                                    <span className="text-4xl font-bold">{state.data.climaticZone}</span>
+                                </div>
+                                <div>
+                                    <p className="text-lg font-medium text-foreground">
+                                        Zona climática según CTE: <span className="font-bold">{state.data.climaticZone}</span>
+                                    </p>
+                                    {state.data.climaticZoneRule && (
+                                        <p className="text-sm text-muted-foreground mt-1 bg-background/50 p-2 rounded border inline-block">
+                                            Rango: {state.data.climaticZoneRule}
+                                        </p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             )}
         </div>

@@ -23,14 +23,15 @@ const getErrorDescription = (xml: string): string => {
     return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
 
-async function getFullData(ref: string, latitude: number, longitude: number): Promise<CatastroData | string> {
+async function getFullData(displayRef: string, searchRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
     const fetchOptions = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         }
     };
 
-    const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${ref}`;
+    // Usamos searchRef (que puede ser de 20) para obtener datos específicos de construcción
+    const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${searchRef}`;
     const [dataResponse, elevationRes, ignRes] = await Promise.all([
         fetch(dataUrl, fetchOptions),
         fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
@@ -40,7 +41,6 @@ async function getFullData(ref: string, latitude: number, longitude: number): Pr
     if (!dataResponse.ok) return "No se pudo contactar con el Catastro.";
     const dataXml = await dataResponse.text();
     
-    // Si el error es que hay múltiples o no hay datos, pero tenemos la referencia, intentamos extraer lo que podamos
     const address = parseXmlTag(dataXml, 'ldt');
     const municipality = parseXmlTag(dataXml, 'nm');
     const province = parseXmlTag(dataXml, 'np');
@@ -69,7 +69,7 @@ async function getFullData(ref: string, latitude: number, longitude: number): Pr
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: ref,
+        ref: displayRef, // Devolvemos la referencia "madre" (14) para mostrar
         address: address || 'No disponible',
         municipality,
         province,
@@ -91,8 +91,10 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     if (ref.length < 14) return { data: null, error: "La referencia debe tener al menos 14 caracteres." };
 
     try {
-        // 1. Obtener coordenadas de la referencia (aunque sea de 14)
-        const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
+        const motherRef = ref.substring(0, 14);
+        
+        // 1. Obtener coordenadas de la referencia madre
+        const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${motherRef}`;
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();
 
@@ -103,8 +105,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
         if (!lat || !lng) return { data: null, error: "No se pudieron obtener coordenadas para esta referencia." };
 
-        // 2. Si la referencia es de 14 caracteres, "bajamos" a una referencia interna de 20 para obtener datos de construcción
-        let finalRef = ref;
+        // 2. Si la referencia es de 14, buscamos una de 20 para obtener datos de construcción
+        let searchRef = ref;
         if (ref.length === 14) {
             const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${lng}&Coordenada_Y=${lat}`;
             const rcCoordsRes = await fetch(rcCoordsUrl);
@@ -112,11 +114,11 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
             const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
             const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
             if (pc1 && pc2) {
-                finalRef = pc1 + pc2;
+                searchRef = pc1 + pc2;
             }
         }
 
-        const result = await getFullData(finalRef, lat, lng);
+        const result = await getFullData(motherRef, searchRef, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {
@@ -135,15 +137,13 @@ export async function searchByCoords(lat: number, lng: number): Promise<ActionSt
         
         if (!pc1 || !pc2) return { data: null, error: "No se encontró una referencia catastral en este punto." };
         
-        const ref = pc1 + pc2;
-        const result = await getFullData(ref, lat, lng);
+        const ref20 = pc1 + pc2;
+        const motherRef = ref20.substring(0, 14);
+        
+        const result = await getFullData(motherRef, ref20, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {
         return { data: null, error: "Error al consultar las coordenadas en el Catastro." };
     }
-}
-
-export async function searchByAddress(lat: number, lng: number, addressText: string): Promise<ActionState> {
-    return searchByCoords(lat, lng);
 }
