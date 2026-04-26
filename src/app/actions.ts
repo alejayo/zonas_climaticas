@@ -10,10 +10,15 @@ const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/reverseGeocode';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
-  const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
+  const regex = new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 'si');
   const match = xml.match(regex);
   if (match && match[1]) {
-      return match[1].trim().replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      return match[1].trim()
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'");
   }
   return null;
 };

@@ -145,27 +145,26 @@ export function getClimaticZone(provinceName: string, altitude: number): { zone:
     const rules = climaticZones.get(normalized);
     if (!rules) return null;
 
+    const a = Math.round(altitude);
+
     for (let i = 0; i < rules.length; i++) {
         const rule = rules[i];
 
-        // For single-zone provinces
         if (rule.max === undefined && rule.min === undefined) {
             return { zone: rule.zone, rule: 'Provincia con zona única' };
         }
         
-        // For upper-bound rules (<=)
         if (rule.max !== undefined && altitude <= rule.max) {
             const lowerBound = i > 0 ? (rules[i - 1].max || 0) : 0;
             if (lowerBound > 0) {
-                 return { zone: rule.zone, rule: `${lowerBound}m < Altitud <= ${rule.max}m` };
+                 return { zone: rule.zone, rule: `${lowerBound} m < ${a} m <= ${rule.max} m` };
             } else {
-                 return { zone: rule.zone, rule: `Altitud <= ${rule.max}m` };
+                 return { zone: rule.zone, rule: `${a} m <= ${rule.max} m` };
             }
         }
 
-        // For lower-bound rules (>=)
         if (rule.min !== undefined && rule.max === undefined && altitude >= rule.min) {
-            return { zone: rule.zone, rule: `Altitud >= ${rule.min}m` };
+            return { zone: rule.zone, rule: `${a} m >= ${rule.min} m` };
         }
     }
     
