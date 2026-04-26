@@ -39,15 +39,14 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
   const ref = validatedFields.data.ref;
 
   try {
-    // Es necesario simular una petición de navegador
     const fetchOptions = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         }
     };
-
-    const coordsUrl = `${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
-    const dataUrl = `${CATASTRO_DATA_URL}?RC=${ref}`;
+    
+    const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
+    const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${ref}`;
 
     // Realizar ambas peticiones en paralelo para mayor eficiencia
     const [coordsResponse, dataResponse] = await Promise.all([
@@ -55,13 +54,13 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
       fetch(dataUrl, fetchOptions)
     ]);
 
-    if (!coordsResponse.ok) {
-        return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
+    if (!coordsResponse.ok || !dataResponse.ok) {
+      console.error('Catastro service response not OK', { 
+          coordsStatus: coordsResponse.status, 
+          dataStatus: dataResponse.status 
+      });
+      return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
     }
-     if (!dataResponse.ok) {
-        return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
-    }
-
 
     const [coordsXml, dataXml] = await Promise.all([
         coordsResponse.text(),
@@ -117,9 +116,6 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
   } catch (e: any) {
     console.error("An unexpected error occurred during the search:", e);
-    if (e.message.includes('fetch')) {
-         return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
-    }
-    return { data: null, error: `Ocurrió un error inesperado: ${e.message}.` };
+    return { data: null, error: `Ocurrió un error inesperado al contactar servicios externos.` };
   }
 }
