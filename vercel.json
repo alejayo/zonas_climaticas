@@ -1,3 +1,14 @@
 {
-  "regions": ["cdg1"]
+  "regions": ["cdg1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://tu-dominio-wordpress.com"
+        }
+      ]
+    }
+  ]
 }
