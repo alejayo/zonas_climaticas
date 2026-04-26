@@ -1,10 +1,9 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Consultor Técnico de Edificación',
-  description: 'Análisis geográfico integral, zonas climáticas CTE y acceso directo a registros oficiales de eficiencia energética (IEE/CEE).',
+  title: 'Zonas climaticas España',
+  description: 'Análisis geográfico integral y consulta de datos técnicos de edificación.',
 };
 
 export default function RootLayout({
@@ -16,7 +15,7 @@ export default function RootLayout({
     <html lang="es">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">{children}</body>

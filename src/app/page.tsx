@@ -1,4 +1,3 @@
-
 import CatastroSearch from '@/components/catastro-search';
 
 export default async function Home(props: { searchParams: Promise<{ embed?: string }> }) {
@@ -11,11 +10,8 @@ export default async function Home(props: { searchParams: Promise<{ embed?: stri
         {!isEmbed && (
           <header className="text-center">
             <h1 className="text-4xl font-bold text-primary font-headline tracking-tight lg:text-5xl">
-              Consultor Técnico de Edificación
+              Zonas climaticas España
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Análisis geográfico integral, zonas climáticas CTE y acceso directo a registros oficiales de eficiencia energética (IEE/CEE).
-            </p>
           </header>
         )}
 
