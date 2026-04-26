@@ -72,42 +72,28 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
                 
-                // Construimos la RC de 20 caracteres completa si está disponible
-                // En Consulta_DNPRC, si es un inmueble concreto, los tags car, cc1, cc2 están presentes
-                const car = parseXmlTag(childXml, 'car');
-                const cc1 = parseXmlTag(childXml, 'cc1');
-                const cc2 = parseXmlTag(childXml, 'cc2');
-                
-                if (car && cc1 && cc2) {
-                    finalRef = pc1 + pc2 + car + cc1 + cc2;
-                } else {
-                    // Si no, intentamos sacar la primera RC de la lista (vrc)
-                    const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
-                    if (firstRcMatch) {
-                        const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
-                        const firstPc2 = parseXmlTag(firstRcMatch[0], 'pc2');
-                        const firstCar = parseXmlTag(firstRcMatch[0], 'car');
-                        const firstCc1 = parseXmlTag(firstRcMatch[0], 'cc1');
-                        const firstCc2 = parseXmlTag(firstRcMatch[0], 'cc2');
-                        if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
-                            finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                            
-                            // Re-consultamos los datos de esa RC específica para obtener dirección y año correctos
-                            const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
-                            const specificRes = await fetch(specificDataUrl, fetchOptions);
-                            if (specificRes.ok) {
-                                const specificXml = await specificRes.text();
-                                address = parseXmlTag(specificXml, 'ldt') || address;
-                                constructionYear = parseXmlTag(specificXml, 'ant') || constructionYear;
-                            }
+                // Intentamos sacar la primera RC de la lista (vrc) que suele tener dirección y año
+                const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
+                if (firstRcMatch) {
+                    const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
+                    const firstPc2 = parseXmlTag(firstRcMatch[0], 'pc2');
+                    const firstCar = parseXmlTag(firstRcMatch[0], 'car');
+                    const firstCc1 = parseXmlTag(firstRcMatch[0], 'cc1');
+                    const firstCc2 = parseXmlTag(firstRcMatch[0], 'cc2');
+                    
+                    if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
+                        finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
+                        
+                        // Re-consultamos los datos de esa RC específica para obtener dirección y año correctos
+                        const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
+                        const specificRes = await fetch(specificDataUrl, fetchOptions);
+                        if (specificRes.ok) {
+                            const specificXml = await specificRes.text();
+                            address = parseXmlTag(specificXml, 'ldt') || address;
+                            constructionYear = parseXmlTag(specificXml, 'ant') || constructionYear;
                         }
                     }
                 }
-
-                const childAddress = parseXmlTag(childXml, 'ldt');
-                const childYear = parseXmlTag(childXml, 'ant');
-                if (childAddress) address = childAddress;
-                if (childYear) constructionYear = childYear;
             }
         }
     }

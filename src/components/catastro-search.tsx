@@ -127,12 +127,16 @@ export default function CatastroSearch() {
     // Función para construir el enlace a la ficha del inmueble
     const getCatastroLink = (rc: string) => {
         if (rc.length < 14) return '#';
-        const rc1 = rc.substring(0, 14);
-        const rc2 = rc.substring(14);
-        if (rc2) {
-            return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc.substring(0,7)}&rc2=${rc.substring(7,14)}&car=${rc.substring(14,18)}&cc1=${rc.substring(18,19)}&cc2=${rc.substring(19,20)}`;
+        const rc1 = rc.substring(0, 7);
+        const rc2 = rc.substring(7, 14);
+        const car = rc.substring(14, 18);
+        const cc1 = rc.substring(18, 19);
+        const cc2 = rc.substring(19, 20);
+        
+        if (rc.length === 20) {
+            return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc1}&rc2=${rc2}&car=${car}&cc1=${cc1}&cc2=${cc2}`;
         }
-        return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc.substring(0,7)}&rc2=${rc.substring(7,14)}`;
+        return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc1}&rc2=${rc2}`;
     };
 
     return (
