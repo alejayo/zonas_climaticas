@@ -14,25 +14,20 @@ const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/re
 const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
-const parseXmlTag = (xml: string, tag: string): string | null => {
-  // Regex prefix-agnostic for XML tags
-  const regex = new RegExp(`<[^/>]*?${tag}[^>]*>([\\s\\S]*?)</[^>]*?${tag}>`, 'i');
+const parseXmlValue = (xml: string, tag: string): string | null => {
+  // Matches <anyprefix:tag ...>value</anyprefix:tag>
+  const regex = new RegExp(`<([^/>]*?:)?${tag}[^>]*>([\\s\\S]*?)<\\/([^>]*?:)?${tag}>`, 'i');
   const match = xml.match(regex);
-  if (match && match[1]) {
-      return match[1].trim()
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'")
-        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+  if (match && match[2]) {
+    return match[2].trim()
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
   }
   return null;
-};
-
-const getErrorDescription = (xml: string): string => {
-    const errorMatch = xml.match(/<des>(.*?)<\/des>/);
-    return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
 
 async function consultarIEE_GVA(rc14: string): Promise<IEEData | null> {
@@ -55,14 +50,14 @@ async function consultarIEE_GVA(rc14: string): Promise<IEEData | null> {
 
     return {
       found: true,
-      numiee: parseXmlTag(xml, 'inf_numieevcv') || undefined,
-      urlgesie: parseXmlTag(xml, 'urlgesie') || undefined,
-      evaluado: parseXmlTag(xml, 'evaluado') || undefined,
-      caducidad: parseXmlTag(xml, 'fecha_caducidad')?.replace(" AD", "") || undefined,
-      count_intu: parseInt(parseXmlTag(xml, 'count_intu') || '0'),
-      count_intm: parseInt(parseXmlTag(xml, 'count_intm') || '0'),
-      emisiones: parseXmlTag(xml, 'emisionesletra') || undefined,
-      consumo: parseXmlTag(xml, 'consumoletra') || undefined,
+      numiee: parseXmlValue(xml, 'inf_numieevcv') || undefined,
+      urlgesie: parseXmlValue(xml, 'urlgesie') || undefined,
+      evaluado: parseXmlValue(xml, 'evaluado') || undefined,
+      caducidad: parseXmlValue(xml, 'fecha_caducidad')?.replace(" AD", "") || undefined,
+      count_intu: parseInt(parseXmlValue(xml, 'count_intu') || '0'),
+      count_intm: parseInt(parseXmlValue(xml, 'count_intm') || '0'),
+      emisiones: parseXmlValue(xml, 'emisionesletra') || undefined,
+      consumo: parseXmlValue(xml, 'consumoletra') || undefined,
     };
   } catch (e) {
     return null;
@@ -92,14 +87,14 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
     if (members.length === 0) return { found: false, others: [], total: 0 };
 
     const items: CEEItem[] = members.map(m => ({
-      ref: parseXmlTag(m, 'ref_referencia') || '',
-      emicalif: parseXmlTag(m, 'cer_emicalificacion') || '',
-      emitotal: parseXmlTag(m, 'cer_emitotal') || undefined,
-      concalif: parseXmlTag(m, 'cer_concalificacion') || '',
-      contotal: parseXmlTag(m, 'cer_contotal') || undefined,
-      validohasta: parseXmlTag(m, 'validohasta') || undefined,
-      direccion: parseXmlTag(m, 'exp_direccion') || undefined,
-      url: parseXmlTag(m, 'url_castellano') || undefined,
+      ref: parseXmlValue(m, 'ref_referencia') || '',
+      emicalif: parseXmlValue(m, 'cer_emicalificacion') || '',
+      emitotal: parseXmlValue(m, 'cer_emitotal') || undefined,
+      concalif: parseXmlValue(m, 'cer_concalificacion') || '',
+      contotal: parseXmlValue(m, 'cer_contotal') || undefined,
+      validohasta: parseXmlValue(m, 'validohasta') || undefined,
+      direccion: parseXmlValue(m, 'exp_direccion') || undefined,
+      url: parseXmlValue(m, 'url_castellano') || undefined,
     }));
 
     const exactMatch = items.find(i => i.ref === rc20);
@@ -180,13 +175,13 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
     const motherDataXml = await motherDataRes.text();
     
-    let address = parseXmlTag(motherDataXml, 'ldt');
-    let constructionYear = parseXmlTag(motherDataXml, 'ant');
-    const municipality = parseXmlTag(motherDataXml, 'nm');
-    const province = parseXmlTag(motherDataXml, 'np');
-    const postalCode = parseXmlTag(motherDataXml, 'dp');
-    const provinceCode = parseXmlTag(motherDataXml, 'cp');
-    const municipalityCode = parseXmlTag(motherDataXml, 'cm');
+    let address = parseXmlValue(motherDataXml, 'ldt');
+    let constructionYear = parseXmlValue(motherDataXml, 'ant');
+    const municipality = parseXmlValue(motherDataXml, 'nm');
+    const province = parseXmlValue(motherDataXml, 'np');
+    const postalCode = parseXmlValue(motherDataXml, 'dp');
+    const provinceCode = parseXmlValue(motherDataXml, 'cp');
+    const municipalityCode = parseXmlValue(motherDataXml, 'cm');
 
     let finalRef = displayRef;
 
@@ -194,9 +189,9 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
-        const rcCoordsXml = await rcCoordsRes.ok ? await rcCoordsRes.text() : '';
-        const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
-        const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
+        const rcCoordsXml = await rcCoordsRes.text();
+        const pc1 = parseXmlValue(rcCoordsXml, 'pc1');
+        const pc2 = parseXmlValue(rcCoordsXml, 'pc2');
         
         if (pc1 && pc2) {
             const childRef14 = pc1 + pc2;
@@ -207,21 +202,24 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                 // Check if we have multiple units (division horizontal)
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
-                    const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
-                    const firstPc2 = parseXmlTag(firstRcMatch[0], 'pc2');
-                    const firstCar = parseXmlTag(firstRcMatch[0], 'car');
-                    const firstCc1 = parseXmlTag(firstRcMatch[0], 'cc1');
-                    const firstCc2 = parseXmlTag(firstRcMatch[0], 'cc2');
+                    const firstPc1 = parseXmlValue(firstRcMatch[0], 'pc1');
+                    const firstPc2 = parseXmlValue(firstRcMatch[0], 'pc2');
+                    const firstCar = parseXmlValue(firstRcMatch[0], 'car');
+                    const firstCc1 = parseXmlValue(firstRcMatch[0], 'cc1');
+                    const firstCc2 = parseXmlValue(firstRcMatch[0], 'cc2');
                     
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
-                        finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                        // Fetch the details of the first actual unit to get Year and Address
+                        const candidateRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
+                        // Only override finalRef if it was a 14-char search
+                        if (finalRef.length < 20) finalRef = candidateRef;
+                        
+                        // Fetch the details of the specific unit to get Year and Address
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {
                             const specificXml = await specificRes.text();
-                            address = parseXmlTag(specificXml, 'ldt') || address;
-                            constructionYear = parseXmlTag(specificXml, 'ant') || constructionYear;
+                            address = parseXmlValue(specificXml, 'ldt') || address;
+                            constructionYear = parseXmlValue(specificXml, 'ant') || constructionYear;
                         }
                     }
                 }
@@ -297,10 +295,13 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();
 
-        if (coordsXml.includes('<err>')) return { data: null, error: getErrorDescription(coordsXml) };
+        if (coordsXml.includes('<err>')) {
+           const errorMatch = coordsXml.match(/<des>(.*?)<\/des>/);
+           return { data: null, error: errorMatch ? errorMatch[1] : "Referencia no encontrada." };
+        }
 
-        const lat = parseFloat(parseXmlTag(coordsXml, 'ycen') || '0');
-        const lng = parseFloat(parseXmlTag(coordsXml, 'xcen') || '0');
+        const lat = parseFloat(parseXmlValue(coordsXml, 'ycen') || '0');
+        const lng = parseFloat(parseXmlValue(coordsXml, 'xcen') || '0');
 
         if (!lat || !lng) return { data: null, error: "No se pudieron obtener coordenadas para esta referencia." };
 
@@ -318,8 +319,8 @@ export async function searchByCoords(lat: number, lng: number): Promise<ActionSt
         const response = await fetch(url);
         const xml = await response.text();
         
-        const pc1 = parseXmlTag(xml, 'pc1');
-        const pc2 = parseXmlTag(xml, 'pc2');
+        const pc1 = parseXmlValue(xml, 'pc1');
+        const pc2 = parseXmlValue(xml, 'pc2');
         
         if (!pc1 || !pc2) return { data: null, error: "No se encontró una referencia catastral en este punto." };
         
