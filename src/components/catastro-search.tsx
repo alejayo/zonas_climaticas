@@ -80,7 +80,13 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
         }
 
         if (leafletMap.current && currentPos) {
-            leafletMap.current.setView(currentPos, 16);
+            const currentZoom = leafletMap.current.getZoom();
+            // Si el zoom es el inicial muy alejado, lo centramos a nivel de edificio.
+            // Si el usuario ya está navegando (zoom > 6), mantenemos su escala preferida.
+            const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
+            
+            leafletMap.current.setView(currentPos, targetZoom);
+            
             if (marker.current) marker.current.remove();
             const L = require('leaflet');
             marker.current = L.marker(currentPos).addTo(leafletMap.current);
@@ -127,11 +133,12 @@ export default function CatastroSearch() {
         const newState = await searchByCoords(lat, lng);
         setIsSearching(false);
         if (newState.data) {
-            state.data = newState.data;
-            state.error = null;
             setRcValue(newState.data.ref);
             setMapPos([lat, lng]);
             setAddressQuery(newState.data.address);
+            // Actualizamos el estado para renderizar los resultados
+            state.data = newState.data;
+            state.error = null;
         } else {
             state.error = newState.error;
             state.data = null;
@@ -549,4 +556,3 @@ export default function CatastroSearch() {
         </div>
     );
 }
-
