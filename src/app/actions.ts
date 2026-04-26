@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { ActionState, CatastroData } from '@/lib/types';
+import type { ActionState, CatastroData, IEEData, CEEData, CEEItem } from '@/lib/types';
 import { getIneCode, getClimaticZone, getAlternativeClimaticZone } from '@/lib/provinces';
 
 const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
@@ -9,6 +9,10 @@ const CATASTRO_DATA_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizac
 const CATASTRO_RC_BY_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/reverseGeocode';
+
+// GVA WFS Services
+const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
+const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
   const regex = new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 'si');
@@ -28,6 +32,86 @@ const getErrorDescription = (xml: string): string => {
     const errorMatch = xml.match(/<des>(.*?)<\/des>/);
     return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
+
+async function consultarIEE_GVA(rc14: string): Promise<IEEData | null> {
+  try {
+    const filter = `<ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"><ogc:PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><ogc:PropertyName>inf_refcatastral</ogc:PropertyName><ogc:Literal>${rc14}*</ogc:Literal></ogc:PropertyIsLike></ogc:Filter>`;
+    const params = new URLSearchParams({
+      service: "WFS",
+      version: "1.1.0",
+      request: "GetFeature",
+      typeName: "ms:GESIEE.Informes",
+      maxFeatures: "1",
+      FILTER: filter
+    });
+    
+    const response = await fetch(`${GVA_IEE_WFS}?${params.toString()}`);
+    if (!response.ok) return null;
+    const xml = await response.text();
+    
+    if (!xml.includes('featureMember')) return { found: false };
+
+    return {
+      found: true,
+      numiee: parseXmlTag(xml, 'inf_numieevcv') || undefined,
+      urlgesie: parseXmlTag(xml, 'urlgesie') || undefined,
+      evaluado: parseXmlTag(xml, 'evaluado') || undefined,
+      caducidad: parseXmlTag(xml, 'fecha_caducidad')?.replace(" AD", "") || undefined,
+      count_intu: parseInt(parseXmlTag(xml, 'count_intu') || '0'),
+      count_intm: parseInt(parseXmlTag(xml, 'count_intm') || '0'),
+      emisiones: parseXmlTag(xml, 'emisionesletra') || undefined,
+      consumo: parseXmlTag(xml, 'consumoletra') || undefined,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | null> {
+  try {
+    const filter = `<ogc:Filter xmlns:ogc="http://www.opengis.net/ogc"><ogc:PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><ogc:PropertyName>ref_referencia</ogc:PropertyName><ogc:Literal>${rc14}*</ogc:Literal></ogc:PropertyIsLike></ogc:Filter>`;
+    const params = new URLSearchParams({
+      service: "WFS",
+      version: "1.1.0",
+      request: "GetFeature",
+      typeName: "CEEEdificios",
+      maxFeatures: "50",
+      FILTER: filter
+    });
+
+    const response = await fetch(`${GVA_CEE_WFS}?${params.toString()}`);
+    if (!response.ok) return null;
+    const xml = await response.text();
+    
+    const featureRegex = /<gml:featureMember[^>]*>(.*?)<\/gml:featureMember>/gs;
+    const members = xml.match(featureRegex) || [];
+    
+    if (members.length === 0) return { found: false, others: [], total: 0 };
+
+    const items: CEEItem[] = members.map(m => ({
+      ref: parseXmlTag(m, 'ref_referencia') || '',
+      emicalif: parseXmlTag(m, 'cer_emicalificacion') || '',
+      emitotal: parseXmlTag(m, 'cer_emitotal') || undefined,
+      concalif: parseXmlTag(m, 'cer_concalificacion') || '',
+      contotal: parseXmlTag(m, 'cer_contotal') || undefined,
+      validohasta: parseXmlTag(m, 'validohasta') || undefined,
+      direccion: parseXmlTag(m, 'exp_direccion') || undefined,
+      url: parseXmlTag(m, 'url_castellano') || undefined,
+    }));
+
+    const exactMatch = items.find(i => i.ref === rc20);
+    const others = items.filter(i => i.ref !== rc20);
+
+    return {
+      found: true,
+      exactMatch,
+      others,
+      total: items.length
+    };
+  } catch (e) {
+    return null;
+  }
+}
 
 const getCEERegistry = (province: string | null): CatastroData['ceeRegistry'] => {
   if (!province) return null;
@@ -61,31 +145,9 @@ const getCEERegistry = (province: string | null): CatastroData['ceeRegistry'] =>
       name: 'ICAEN (Cataluña)',
       url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
       description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
-    },
-    'GIRONA': {
-      name: 'ICAEN (Cataluña)',
-      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
-      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
-    },
-    'LLEIDA': {
-      name: 'ICAEN (Cataluña)',
-      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
-      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
-    },
-    'TARRAGONA': {
-      name: 'ICAEN (Cataluña)',
-      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
-      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
-    },
-    'SEVILLA': {
-      name: 'Registro CEE de Andalucía',
-      url: 'https://www.juntadeandalucia.es/organismos/economiahaciendayfondoseuropeos/areas/energia/eficiencia-energetica/paginas/registro-certificados-energeticos.html',
-      description: 'Registro de certificados energéticos de edificios de la Junta de Andalucía.'
     }
-    // Se pueden añadir más comunidades según sea necesario
   };
 
-  // Búsqueda por coincidencia
   for (const key in registries) {
     if (p.includes(key)) return registries[key];
   }
@@ -181,6 +243,20 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
     const alternativeZoneInfo = getAlternativeClimaticZone(municipalityIneCode);
 
+    // Fetch extra data for Comunitat Valenciana
+    let ieeGva = null;
+    let ceeGva = null;
+    const isCV = province && ['ALICANTE', 'ALACANT', 'CASTELLON', 'CASTELLO', 'VALENCIA', 'VALÈNCIA'].some(v => province.toUpperCase().includes(v));
+    
+    if (isCV) {
+      const [ieeRes, ceeRes] = await Promise.all([
+        consultarIEE_GVA(motherRef),
+        consultarCEE_GVA(motherRef, finalRef)
+      ]);
+      ieeGva = ieeRes;
+      ceeGva = ceeRes;
+    }
+
     return {
         ref: finalRef, 
         address: address || 'No disponible',
@@ -199,7 +275,9 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         alternativeClimaticZone: alternativeZoneInfo?.zone,
         alternativeClimaticZoneMunicipality: alternativeZoneInfo?.municipality,
         alternativeClimaticZoneReference: alternativeZoneInfo?.reference,
-        ceeRegistry: getCEERegistry(province)
+        ceeRegistry: getCEERegistry(province),
+        ieeGva,
+        ceeGva
     };
 }
 

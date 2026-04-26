@@ -4,22 +4,53 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { searchCatastro, searchByCoords } from '@/app/actions';
-import type { ActionState } from '@/lib/types';
+import type { ActionState, CEEItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
     Navigation, CheckCircle2, ExternalLink, Info, FileText,
-    Zap
+    Zap, ClipboardCheck, History, Calendar
 } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
 
 const initialState: ActionState = { data: null, error: null };
+
+const CEE_COLORES: Record<string, string> = {
+  A: "bg-[#00a550]",
+  B: "bg-[#51b747]",
+  C: "bg-[#bcd630]",
+  D: "bg-[#fff200]",
+  E: "bg-[#ffb612]",
+  F: "bg-[#f06c23]",
+  G: "bg-[#ed1c24]",
+};
+
+const LetraBadge = ({ letra, size = 'md' }: { letra: string, size?: 'sm' | 'md' }) => {
+  if (!letra || letra === '—' || letra === '') return <Badge variant="outline">—</Badge>;
+  const l = letra.toUpperCase();
+  const colorClass = CEE_COLORES[l] || "bg-muted";
+  const textColor = ["D", "E"].includes(l) ? "text-black" : "text-white";
+  
+  return (
+    <span className={cn(
+      "inline-flex items-center justify-center font-black rounded shadow-sm transition-transform hover:scale-105",
+      colorClass,
+      textColor,
+      size === 'sm' ? "w-6 h-6 text-xs" : "w-10 h-10 text-xl"
+    )}>
+      {l}
+    </span>
+  );
+};
 
 const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: number, lng: number) => void, currentPos?: [number, number] }) => {
     const mapRef = useRef<HTMLDivElement>(null);
@@ -328,7 +359,153 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 3. Zona Climática */}
+                    {/* 3. Comunitat Valenciana - IEE / CEE Detallado */}
+                    {(state.data.ieeGva || state.data.ceeGva) && (
+                      <Card className="border-green-600/20 bg-green-50/20">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-xl text-green-800">
+                            <ClipboardCheck className="h-6 w-6"/>
+                            <span>Registros GVA (Comunitat Valenciana)</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {/* IEE SECTION */}
+                          {state.data.ieeGva && (
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-bold flex items-center gap-2 text-green-700">
+                                <FileText className="h-4 w-4" /> INFORME EVALUACIÓN EDIFICIO (IEE)
+                              </h4>
+                              {state.data.ieeGva.found ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-white border border-green-200">
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground uppercase font-bold">Estado</p>
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={state.data.ieeGva.evaluado === 'Completo' ? 'bg-green-600' : 'bg-orange-500'}>
+                                        {state.data.ieeGva.evaluado}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground uppercase font-bold">Validez</p>
+                                    <p className="text-sm font-medium flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}
+                                    </p>
+                                  </div>
+                                  {(state.data.ieeGva.count_intu! > 0 || state.data.ieeGva.count_intm! > 0) && (
+                                    <div className="col-span-full pt-2 border-t mt-2">
+                                      <div className="flex flex-col gap-1">
+                                        {state.data.ieeGva.count_intu! > 0 && (
+                                          <p className="text-xs text-red-600 font-bold flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {state.data.ieeGva.count_intu} intervenciones urgentes
+                                          </p>
+                                        )}
+                                        {state.data.ieeGva.count_intm! > 0 && (
+                                          <p className="text-xs text-orange-600 font-bold flex items-center gap-1">
+                                            <Zap className="h-3 w-3" /> {state.data.ieeGva.count_intm} intervenciones a corto plazo
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {state.data.ieeGva.urlgesie && (
+                                    <div className="col-span-full pt-2">
+                                      <Button variant="outline" size="sm" asChild className="w-full text-xs h-8">
+                                        <a href={state.data.ieeGva.urlgesie} target="_blank" rel="noopener noreferrer">
+                                          Ver Informe GESIEE <ExternalLink className="h-3 w-3 ml-1" />
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <Alert className="bg-white border-red-200">
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                  <AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado para este edificio.</AlertDescription>
+                                </Alert>
+                              )}
+                            </div>
+                          )}
+
+                          {/* CEE SECTION */}
+                          {state.data.ceeGva && (
+                            <div className="space-y-3 pt-2">
+                              <h4 className="text-sm font-bold flex items-center gap-2 text-green-700">
+                                <Zap className="h-4 w-4" /> CERTIFICADO EFICIENCIA ENERGÉTICA (CEE)
+                              </h4>
+                              {state.data.ceeGva.found ? (
+                                <div className="space-y-4">
+                                  {state.data.ceeGva.exactMatch ? (
+                                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 shadow-sm">
+                                      <p className="text-[10px] font-black text-blue-800 uppercase mb-2 tracking-wider">Certificado Inmueble Exacto</p>
+                                      <div className="flex items-center justify-between gap-4">
+                                        <div className="flex gap-4">
+                                          <div className="text-center">
+                                            <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Emisiones</p>
+                                            <LetraBadge letra={state.data.ceeGva.exactMatch.emicalif} />
+                                          </div>
+                                          <div className="text-center">
+                                            <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Consumo</p>
+                                            <LetraBadge letra={state.data.ceeGva.exactMatch.concalif} />
+                                          </div>
+                                        </div>
+                                        <div className="text-right flex-grow">
+                                          <p className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.ref}</p>
+                                          <p className="text-[10px] text-blue-700">Vence: {state.data.ceeGva.exactMatch.validohasta}</p>
+                                          {state.data.ceeGva.exactMatch.url && (
+                                            <a href={state.data.ceeGva.exactMatch.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-primary hover:underline mt-1 block">
+                                              Descargar PDF <ExternalLink className="inline h-2 w-2" />
+                                            </a>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground italic">No hay un certificado específico para este inmueble concreto.</p>
+                                  )}
+
+                                  {state.data.ceeGva.others.length > 0 && (
+                                    <Accordion type="single" collapsible className="w-full">
+                                      <AccordionItem value="others" className="border-none">
+                                        <AccordionTrigger className="text-xs font-bold py-2 px-4 bg-white rounded-md border border-green-200 hover:no-underline">
+                                          Otros certificados del edificio ({state.data.ceeGva.others.length})
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                            {state.data.ceeGva.others.map((item, idx) => (
+                                              <div key={idx} className="flex items-center justify-between p-2 rounded border border-border bg-white text-[11px]">
+                                                <div className="flex items-center gap-3">
+                                                  <LetraBadge letra={item.emicalif} size="sm" />
+                                                  <div className="font-mono text-muted-foreground">{item.ref}</div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-muted-foreground">Vence: {item.validohasta}</span>
+                                                  {item.url && (
+                                                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary p-1">
+                                                      <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    </Accordion>
+                                  )}
+                                </div>
+                              ) : (
+                                <Alert className="bg-white border-red-200">
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                  <AlertDescription className="text-sm text-red-700 font-medium">No hay certificados registrados para esta finca.</AlertDescription>
+                                </Alert>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* 4. Zona Climática */}
                     <Card className="border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
@@ -402,13 +579,13 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 4. Certificado de Eficiencia Energética (CEE) */}
+                    {/* 5. Otros Registros Regionales */}
                     {state.data.ceeRegistry && (
                         <Card className="border-orange-500/20 bg-orange-50/50">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-xl">
-                                    <Zap className="text-orange-600 h-6 w-6"/>
-                                    <span>Certificado Energético (CEE)</span>
+                                    < Zap className="text-orange-600 h-6 w-6"/>
+                                    <span>Otros Enlaces de Interés</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
