@@ -1,7 +1,5 @@
-
 'use server';
 
-import { z } from 'zod';
 import type { ActionState, CatastroData } from '@/lib/types';
 import { getIneCode, getClimaticZone } from '@/lib/provinces';
 
@@ -41,8 +39,8 @@ async function getFullData(ref: string, latitude: number, longitude: number): Pr
 
     if (!dataResponse.ok) return "No se pudo contactar con el Catastro.";
     const dataXml = await dataResponse.text();
-    if (dataXml.includes('<err>')) return `Error del Catastro: ${getErrorDescription(dataXml)}`;
-
+    
+    // Si el error es que hay múltiples o no hay datos, pero tenemos la referencia, intentamos extraer lo que podamos
     const address = parseXmlTag(dataXml, 'ldt');
     const municipality = parseXmlTag(dataXml, 'nm');
     const province = parseXmlTag(dataXml, 'np');
@@ -50,10 +48,6 @@ async function getFullData(ref: string, latitude: number, longitude: number): Pr
     const constructionYear = parseXmlTag(dataXml, 'ant');
     const provinceCode = parseXmlTag(dataXml, 'cp');
     const municipalityCode = parseXmlTag(dataXml, 'cm');
-
-    const pc1 = parseXmlTag(dataXml, 'pc1');
-    const pc2 = parseXmlTag(dataXml, 'pc2');
-    const fullRef = (pc1 && pc2) ? pc1 + pc2 : ref;
 
     const elevationData = elevationRes.ok ? await elevationRes.json() : { elevation: [0] };
     const altitude = elevationData.elevation?.[0] ?? 0;
@@ -75,7 +69,7 @@ async function getFullData(ref: string, latitude: number, longitude: number): Pr
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: fullRef,
+        ref: ref,
         address: address || 'No disponible',
         municipality,
         province,
@@ -97,6 +91,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     if (ref.length < 14) return { data: null, error: "La referencia debe tener al menos 14 caracteres." };
 
     try {
+        // 1. Obtener coordenadas de la referencia (aunque sea de 14)
         const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();
@@ -108,7 +103,20 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
         if (!lat || !lng) return { data: null, error: "No se pudieron obtener coordenadas para esta referencia." };
 
-        const result = await getFullData(ref, lat, lng);
+        // 2. Si la referencia es de 14 caracteres, "bajamos" a una referencia interna de 20 para obtener datos de construcción
+        let finalRef = ref;
+        if (ref.length === 14) {
+            const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${lng}&Coordenada_Y=${lat}`;
+            const rcCoordsRes = await fetch(rcCoordsUrl);
+            const rcCoordsXml = await rcCoordsRes.text();
+            const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
+            const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
+            if (pc1 && pc2) {
+                finalRef = pc1 + pc2;
+            }
+        }
+
+        const result = await getFullData(finalRef, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {

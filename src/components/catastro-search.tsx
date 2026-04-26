@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -13,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
-    Navigation, CheckCircle2 
+    Navigation, CheckCircle2, ExternalLink 
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import 'leaflet/dist/leaflet.css';
@@ -288,18 +287,29 @@ export default function CatastroSearch() {
                         </Card>
                     )}
 
-                    {/* 3. Datos del Catastro */}
+                    {/* 3. Información Catastral */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
                                 <Building className="text-primary h-6 w-6"/>
-                                <span>Ficha del Catastro</span>
+                                <span>Información Catastral</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Referencia Catastral</p>
-                                <p className="text-lg font-mono font-bold text-primary">{state.data.ref}</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-lg font-mono font-bold text-primary">{state.data.ref}</p>
+                                    <a 
+                                        href={`https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${state.data.ref.substring(0,7)}&rc2=${state.data.ref.substring(7,14)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-muted-foreground hover:text-primary transition-colors"
+                                        title="Abrir en Sede Electrónica del Catastro"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Dirección (Catastro)</p>
@@ -307,11 +317,25 @@ export default function CatastroSearch() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Municipio</p>
-                                <p className="text-base">{state.data.municipality} {state.data.municipalityIneCode && <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">INE: {state.data.municipalityIneCode}</span>}</p>
+                                <p className="text-base">
+                                    {state.data.municipality} 
+                                    {state.data.municipalityIneCode && (
+                                        <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">
+                                            INE: {state.data.municipalityIneCode}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Provincia</p>
-                                <p className="text-base">{state.data.province} {state.data.ineCode && <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">INE: {state.data.ineCode}</span>}</p>
+                                <p className="text-base">
+                                    {state.data.province} 
+                                    {state.data.ineCode && (
+                                        <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">
+                                            INE: {state.data.ineCode}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Código Postal</p>
