@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { searchCatastro, searchByCoords } from '@/app/actions';
 import type { ActionState } from '@/lib/types';
@@ -15,7 +15,7 @@ import {
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
     Navigation, ExternalLink, FileText,
-    Zap, ClipboardCheck, Calendar
+    Zap, ClipboardCheck, Calendar, Info
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
@@ -114,6 +114,13 @@ export default function CatastroSearch() {
             setAddressQuery(state.data.address); 
         }
     }, [state.data]);
+
+    const buildingAge = useMemo(() => {
+        if (!state.data?.constructionYear || state.data.constructionYear === 'No disponible') return null;
+        const year = parseInt(state.data.constructionYear);
+        if (isNaN(year)) return null;
+        return new Date().getFullYear() - year;
+    }, [state.data?.constructionYear]);
 
     const handleMapSelect = async (lat: number, lng: number) => {
         setIsSearching(true);
@@ -321,7 +328,10 @@ export default function CatastroSearch() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Año de Construcción</p>
-                                <p className="text-base font-bold text-primary">{state.data.constructionYear || 'No disponible'}</p>
+                                <p className="text-base font-bold text-primary">
+                                    {state.data.constructionYear || 'No disponible'}
+                                    {buildingAge !== null && <span className="text-xs font-normal text-muted-foreground ml-2">({buildingAge} años)</span>}
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
@@ -436,9 +446,30 @@ export default function CatastroSearch() {
                                   )}
                                 </div>
                               ) : (
-                                <Alert className="bg-white border-red-200">
-                                  <AlertTriangle className="h-4 w-4 text-red-600" /><AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado.</AlertDescription>
-                                </Alert>
+                                buildingAge !== null ? (
+                                    buildingAge < 50 ? (
+                                        <Alert className="bg-blue-50/50 border-blue-200">
+                                          <Info className="h-4 w-4 text-blue-600" />
+                                          <AlertTitle className="text-sm font-bold text-blue-800">No obligatorio por antigüedad</AlertTitle>
+                                          <AlertDescription className="text-xs text-blue-700">
+                                            El edificio tiene {buildingAge} años. Según la normativa, el IEE no es obligatorio hasta alcanzar los 50 años de antigüedad.
+                                          </AlertDescription>
+                                        </Alert>
+                                    ) : (
+                                        <Alert className="bg-red-50/50 border-red-200">
+                                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                                          <AlertTitle className="text-sm font-bold text-red-800">Obligatoriedad de registro</AlertTitle>
+                                          <AlertDescription className="text-xs text-red-700">
+                                            El edificio tiene {buildingAge} años. Al superar los 50 años, existe la <strong>obligatoriedad legal</strong> de disponer de un IEE registrado y en vigor.
+                                          </AlertDescription>
+                                        </Alert>
+                                    )
+                                ) : (
+                                    <Alert className="bg-white border-red-200">
+                                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                                      <AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado.</AlertDescription>
+                                    </Alert>
+                                )
                               )}
                             </div>
                           )}
@@ -518,3 +549,4 @@ export default function CatastroSearch() {
         </div>
     );
 }
+
