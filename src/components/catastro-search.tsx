@@ -45,7 +45,7 @@ const LetraBadge = ({ letra, size = 'md' }: { letra: string, size?: 'sm' | 'md' 
       "inline-flex items-center justify-center font-black rounded shadow-sm transition-transform hover:scale-105",
       colorClass,
       textColor,
-      size === 'sm' ? "w-6 h-6 text-xs" : "w-10 h-10 text-xl"
+      size === 'sm' ? "w-6 h-6 text-[10px]" : "w-10 h-10 text-xl"
     )}>
       {l}
     </span>
@@ -188,7 +188,7 @@ export default function CatastroSearch() {
                                 value={rcValue}
                                 onChange={(e) => setRcValue(e.target.value)}
                                 placeholder="Ej: 9872023VH5797S..." 
-                                className="flex-grow text-lg h-12 uppercase" 
+                                className="flex-grow text-lg h-12 uppercase font-mono" 
                                 minLength={14}
                                 maxLength={20}
                             />
@@ -511,19 +511,25 @@ export default function CatastroSearch() {
                                     <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 shadow-sm">
                                       <div className="flex items-center justify-between mb-3">
                                         <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Certificado Inmueble Exacto</p>
-                                        <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 text-[10px] font-mono">
+                                        <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 text-[10px] font-mono font-bold">
                                           {state.data.ceeGva.exactMatch.ref}
                                         </Badge>
                                       </div>
                                       <div className="flex items-center justify-between gap-4">
-                                        <div className="flex gap-4">
+                                        <div className="flex gap-6">
                                           <div className="text-center">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Emisiones</p>
-                                            <LetraBadge letra={state.data.ceeGva.exactMatch.emicalif} />
+                                            <div className="flex items-center gap-2">
+                                              <LetraBadge letra={state.data.ceeGva.exactMatch.emicalif} />
+                                              <span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.emitotal} kgCO₂</span>
+                                            </div>
                                           </div>
                                           <div className="text-center">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Consumo</p>
-                                            <LetraBadge letra={state.data.ceeGva.exactMatch.concalif} />
+                                            <div className="flex items-center gap-2">
+                                              <LetraBadge letra={state.data.ceeGva.exactMatch.concalif} />
+                                              <span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.contotal} kWh</span>
+                                            </div>
                                           </div>
                                         </div>
                                         <div className="text-right flex-grow">
@@ -543,36 +549,63 @@ export default function CatastroSearch() {
                                   )}
 
                                   {state.data.ceeGva.others && state.data.ceeGva.others.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[11px] font-bold text-green-800 uppercase pl-1">Otros certificados registrados en el edificio ({state.data.ceeGva.others.length})</p>
-                                      <div className="max-h-[300px] overflow-y-auto pr-2 space-y-2 border rounded-md p-2 bg-white/50">
-                                        {state.data.ceeGva.others.map((item, idx) => (
-                                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg border border-border bg-white shadow-sm transition-hover hover:border-green-300">
-                                            <div className="flex items-center gap-3">
-                                              <div className="flex flex-col gap-1 items-center">
-                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">Emi</span>
-                                                <LetraBadge letra={item.emicalif} size="sm" />
-                                              </div>
-                                              <div className="flex flex-col gap-1 items-center border-l pl-2">
-                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">Con</span>
-                                                <LetraBadge letra={item.concalif} size="sm" />
-                                              </div>
-                                              <div className="flex flex-col ml-1">
-                                                <span className="text-[10px] font-mono font-bold text-primary">{item.ref}</span>
-                                                <span className="text-[9px] text-muted-foreground">Vence: {item.validohasta}</span>
-                                              </div>
-                                            </div>
-                                            {item.url && (
-                                              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                                  <ExternalLink className="h-4 w-4" />
-                                                </a>
-                                              </Button>
-                                            )}
+                                    <Accordion type="single" collapsible className="w-full mt-4">
+                                      <AccordionItem value="others-table" className="border-none">
+                                        <AccordionTrigger className="hover:no-underline py-2 group">
+                                          <div className="flex items-center gap-2 text-[11px] font-bold text-green-800 uppercase tracking-wide">
+                                            <Building className="h-4 w-4" />
+                                            Otros certificados del edificio ({state.data.ceeGva.others.length})
                                           </div>
-                                        ))}
-                                      </div>
-                                    </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="overflow-x-auto rounded-md border border-slate-200">
+                                            <table className="w-full text-[11px] border-collapse">
+                                              <thead>
+                                                <tr className="bg-slate-50 border-b border-slate-200">
+                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Ref. catastral</th>
+                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Emisiones</th>
+                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Consumo</th>
+                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Válido hasta</th>
+                                                  <th className="px-4 py-2 w-10"></th>
+                                                </tr>
+                                              </thead>
+                                              <tbody className="bg-white divide-y divide-slate-100">
+                                                {state.data.ceeGva.others.map((item, idx) => (
+                                                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-4 py-3 font-mono font-bold text-slate-700">{item.ref}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                      <div className="flex items-center gap-2">
+                                                        <LetraBadge letra={item.emicalif} size="sm" />
+                                                        <span className="font-bold text-slate-700">{item.emitotal} kgCO₂</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                      <div className="flex items-center gap-2">
+                                                        <LetraBadge letra={item.concalif} size="sm" />
+                                                        <span className="font-bold text-slate-700">{item.contotal} kWh</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-600 font-medium">{item.validohasta}</td>
+                                                    <td className="px-4 py-3 text-right">
+                                                      {item.url && (
+                                                        <a 
+                                                          href={item.url} 
+                                                          target="_blank" 
+                                                          rel="noopener noreferrer" 
+                                                          className="text-primary hover:text-primary/80"
+                                                        >
+                                                          <ExternalLink className="h-4 w-4" />
+                                                        </a>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    </Accordion>
                                   )}
                                 </div>
                               ) : (
