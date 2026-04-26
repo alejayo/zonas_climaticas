@@ -81,7 +81,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
-            // Mantener el zoom actual si ya es detallado, o hacer zoom solo si estamos muy lejos (vista inicial)
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             
             leafletMap.current.setView(currentPos, targetZoom);
@@ -150,7 +149,7 @@ export default function CatastroSearch() {
             try {
                 const res = await fetch(`https://www.cartociudad.es/geocoder/api/geocoder/candidates?q=${encodeURIComponent(val)}&limit=5`);
                 const data = await res.json();
-                setSuggestions(Array.isArray(data) ? data : (data.candidates || []));
+                setSuggestions(data.candidates || data || []);
             } catch (err) {
                 setSuggestions([]);
             }
