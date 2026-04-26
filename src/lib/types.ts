@@ -46,12 +46,6 @@ export type CatastroData = {
   alternativeClimaticZone?: string | null;
   alternativeClimaticZoneMunicipality?: string | null;
   alternativeClimaticZoneReference?: string | null;
-  ceeRegistry?: {
-    name: string;
-    url: string;
-    description: string;
-    visorUrl?: string;
-  } | null;
   ieeGva?: IEEData | null;
   ceeGva?: CEEData | null;
 };

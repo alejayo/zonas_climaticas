@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
-    Navigation, ExternalLink, Info, FileText,
+    Navigation, ExternalLink, FileText,
     Zap, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Separator } from './ui/separator';
@@ -421,8 +421,10 @@ export default function CatastroSearch() {
                                           <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
                                         </div>
                                       )}
-                                      {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
-                                      {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
+                                      <div className="w-full flex flex-col gap-1 mt-1">
+                                        {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
+                                        {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
+                                      </div>
                                     </div>
                                   </div>
                                   {state.data.ieeGva.urlgesie && (
@@ -485,14 +487,14 @@ export default function CatastroSearch() {
                                           <div className="overflow-x-auto rounded-md border border-slate-200">
                                             <table className="w-full text-[11px]">
                                               <thead>
-                                                <tr className="bg-slate-50 border-b"><th className="px-4 py-2 text-left">Ref. catastral</th><th className="px-4 py-2 text-left">Emisiones</th><th className="px-4 py-2 text-left">Consumo</th><th className="px-4 py-2 text-left">Validez</th><th className="px-4 py-2"></th></tr>
+                                                <tr className="bg-slate-50 border-b"><th className="px-4 py-2 text-left">Ref. catastral</th><th className="px-4 py-2 text-center">Emisiones</th><th className="px-4 py-2 text-center">Consumo</th><th className="px-4 py-2 text-left">Validez</th><th className="px-4 py-2"></th></tr>
                                               </thead>
                                               <tbody className="bg-white divide-y">
                                                 {state.data.ceeGva.others.map((item, idx) => (
                                                   <tr key={idx} className="hover:bg-slate-50/50">
                                                     <td className="px-4 py-3 font-mono font-bold">{item.ref}</td>
-                                                    <td className="px-4 py-3 whitespace-nowrap"><div className="flex items-center gap-2"><LetraBadge letra={item.emicalif} size="sm" /><span>{item.emitotal} kgCO₂</span></div></td>
-                                                    <td className="px-4 py-3 whitespace-nowrap"><div className="flex items-center gap-2"><LetraBadge letra={item.concalif} size="sm" /><span>{item.contotal} kWh</span></div></td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-center"><div className="flex items-center justify-center gap-2"><LetraBadge letra={item.emicalif} size="sm" /><span>{item.emitotal} kgCO₂</span></div></td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-center"><div className="flex items-center justify-center gap-2"><LetraBadge letra={item.concalif} size="sm" /><span>{item.contotal} kWh</span></div></td>
                                                     <td className="px-4 py-3">{item.validohasta}</td>
                                                     <td className="px-4 py-3 text-right">{item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary"><ExternalLink className="h-4 w-4" /></a>}</td>
                                                   </tr>
