@@ -68,7 +68,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
             leafletMap.current = L.map(mapRef.current).setView([40.416775, -3.70379], 6);
             
-            // Capa de mapa más limpia y profesional (estilo Google Maps sin comercios)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
@@ -85,7 +84,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
-            // Mantener el nivel de zoom actual si el usuario ya ha ampliado
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             
             leafletMap.current.setView(currentPos, targetZoom);
@@ -540,14 +538,20 @@ export default function CatastroSearch() {
                                                   <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                                                     <td className="px-4 py-3 font-mono font-bold text-slate-600">{item.ref}</td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-center">
-                                                      <div className="flex items-center justify-center gap-3">
+                                                      <div className="flex items-center justify-center gap-4">
                                                         <div className="flex flex-col items-center">
-                                                          <span className="text-[8px] uppercase text-muted-foreground">Emisiones</span>
-                                                          <LetraBadge letra={item.emicalif} size="sm" />
+                                                          <span className="text-[8px] uppercase text-muted-foreground leading-tight">Emisiones</span>
+                                                          <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <LetraBadge letra={item.emicalif} size="sm" />
+                                                            {item.emitotal && <span className="text-[9px] font-bold text-slate-700">{item.emitotal}</span>}
+                                                          </div>
                                                         </div>
                                                         <div className="flex flex-col items-center">
-                                                          <span className="text-[8px] uppercase text-muted-foreground">Consumo</span>
-                                                          <LetraBadge letra={item.concalif} size="sm" />
+                                                          <span className="text-[8px] uppercase text-muted-foreground leading-tight">Consumo</span>
+                                                          <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <LetraBadge letra={item.concalif} size="sm" />
+                                                            {item.contotal && <span className="text-[9px] font-bold text-slate-700">{item.contotal}</span>}
+                                                          </div>
                                                         </div>
                                                       </div>
                                                     </td>
