@@ -13,7 +13,7 @@ const FormSchema = z.object({
 });
 
 const CATASTRO_ADDRESS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCWcfLib/OVCWcf.svc/rest/Consulta_DNPLOC';
-const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCWcfLib/OVCCoordenadas.svc/rest/Consulta_CPMRC';
+const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCCoordenadas.svc/rest/Consulta_CPMRC';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 
 const parseXml = <T>(xml: string, tag: string): T | null => {
@@ -41,15 +41,9 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
   const ref = validatedFields.data.ref;
 
   try {
-    const fetchOptions = {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-    };
-
     const [addressResponse, coordsResponse] = await Promise.all([
-      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`, fetchOptions),
-      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`, fetchOptions)
+      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`),
+      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`)
     ]);
 
     if (!addressResponse.ok || !coordsResponse.ok) {
