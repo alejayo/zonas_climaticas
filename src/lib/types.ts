@@ -1,4 +1,6 @@
+
 export type CatastroData = {
+  ref: string;
   address: string;
   municipality: string | null;
   province: string | null;
