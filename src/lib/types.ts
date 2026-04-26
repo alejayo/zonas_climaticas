@@ -16,6 +16,7 @@ export type CatastroData = {
   climaticZoneRule?: string | null;
   alternativeClimaticZone?: string | null;
   alternativeClimaticZoneMunicipality?: string | null;
+  alternativeClimaticZoneReference?: string | null;
 };
 
 export type ActionState = {

@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
-    Navigation, CheckCircle2, ExternalLink, Info 
+    Navigation, CheckCircle2, ExternalLink, Info, FileText 
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import 'leaflet/dist/leaflet.css';
@@ -377,6 +377,23 @@ export default function CatastroSearch() {
                                                 <p className="text-[10px] font-medium text-muted-foreground uppercase">Municipio aplicado:</p>
                                                 <p className="text-sm font-bold text-foreground">{state.data.alternativeClimaticZoneMunicipality}</p>
                                             </div>
+                                            {state.data.alternativeClimaticZoneReference && (
+                                                <div className="pt-2">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <FileText className="h-3 w-3 text-muted-foreground" />
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Registro CTE:</span>
+                                                        <span className="text-[11px] font-mono font-bold text-primary">{state.data.alternativeClimaticZoneReference}</span>
+                                                    </div>
+                                                    <a 
+                                                        href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium"
+                                                    >
+                                                        Ver Documentos Reconocidos <ExternalLink className="h-2 w-2" />
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

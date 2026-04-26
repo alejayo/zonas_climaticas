@@ -177,7 +177,7 @@ export function getClimaticZone(provinceName: string, altitude: number): { zone:
 /**
  * Busca una zona climática alternativa en el Registro General de Documentos Reconocidos del CTE
  */
-export function getAlternativeClimaticZone(municipalityIneCode: string | null): { zone: string; municipality: string } | null {
+export function getAlternativeClimaticZone(municipalityIneCode: string | null): { zone: string; municipality: string; reference: string } | null {
   if (!municipalityIneCode) return null;
   return alternativeClimaticZones.get(municipalityIneCode) || null;
 }

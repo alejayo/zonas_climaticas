@@ -134,6 +134,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         climaticZoneRule: climaticZoneInfo?.rule,
         alternativeClimaticZone: alternativeZoneInfo?.zone,
         alternativeClimaticZoneMunicipality: alternativeZoneInfo?.municipality,
+        alternativeClimaticZoneReference: alternativeZoneInfo?.reference,
     };
 }
 
