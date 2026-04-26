@@ -15,7 +15,8 @@ const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
-  const regex = new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 'si');
+  // Regex prefix-agnostic for XML tags
+  const regex = new RegExp(`<[^/>]*?${tag}[^>]*>([\\s\\S]*?)</[^>]*?${tag}>`, 'i');
   const match = xml.match(regex);
   if (match && match[1]) {
       return match[1].trim()
@@ -23,7 +24,8 @@ const parseXmlTag = (xml: string, tag: string): string | null => {
         .replace(/&gt;/g, '>')
         .replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'");
+        .replace(/&apos;/g, "'")
+        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
   }
   return null;
 };
@@ -83,7 +85,8 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
     if (!response.ok) return null;
     const xml = await response.text();
     
-    const featureRegex = /<gml:featureMember[^>]*>(.*?)<\/gml:featureMember>/gs;
+    // Extract all featureMembers
+    const featureRegex = /<[^>]*?featureMember[^>]*>([\s\S]*?)<\/[^>]*?featureMember>/gi;
     const members = xml.match(featureRegex) || [];
     
     if (members.length === 0) return { found: false, others: [], total: 0 };
@@ -187,10 +190,11 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
+    // Force finding a 20-char RC if we don't have year/detailed address
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
-        const rcCoordsXml = await rcCoordsRes.text();
+        const rcCoordsXml = await rcCoordsRes.ok ? await rcCoordsRes.text() : '';
         const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
         const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
         
@@ -200,6 +204,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
+                // Check if we have multiple units (division horizontal)
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
@@ -210,6 +215,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
+                        // Fetch the details of the first actual unit to get Year and Address
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {

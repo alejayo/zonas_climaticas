@@ -558,7 +558,7 @@ export default function CatastroSearch() {
                                           </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="pt-2">
-                                          <div className="overflow-x-auto rounded-md border border-slate-200">
+                                          <div className="overflow-x-auto rounded-md border border-slate-200 shadow-inner">
                                             <table className="w-full text-[11px] border-collapse">
                                               <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
