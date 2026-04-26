@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Search, MapPin, Globe, Mountain, Sparkles, AlertTriangle, Building, Home, Calendar } from 'lucide-react';
+import { Loader2, Search, MapPin, Globe, Mountain, Sparkles, AlertTriangle, Building, Home, Calendar, Thermometer } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 const initialState: ActionState = { data: null, error: null };
@@ -58,7 +58,7 @@ function Results({ state }: { state: ActionState }) {
         );
     }
 
-    const { address, municipality, province, postalCode, constructionYear, ineCode, latitude, longitude, altitude, aiDescription } = state.data;
+    const { address, municipality, province, postalCode, constructionYear, ineCode, latitude, longitude, altitude, aiDescription, climaticZone, climaticZoneRule } = state.data;
     
     const catastroItems = [
         { icon: MapPin, label: "Dirección", value: address },
@@ -97,6 +97,26 @@ function Results({ state }: { state: ActionState }) {
                     ))}
                 </CardContent>
             </Card>
+
+            {climaticZone && (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Thermometer className="text-primary"/>
+                        <span>Zona Climática (DB-HE)</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <span className="text-4xl font-bold">{climaticZone}</span>
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-base text-foreground">La zona climática de invierno según el CTE DB-HE es <strong>{climaticZone}</strong>.</p>
+                        {climaticZoneRule && <p className="text-sm text-muted-foreground">Regla: {climaticZoneRule} a {altitude.toFixed(0)}m de altitud.</p>}
+                    </div>
+                </CardContent>
+            </Card>
+            )}
 
             <Card>
                 <CardHeader>

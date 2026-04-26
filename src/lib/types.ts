@@ -9,6 +9,8 @@ export type CatastroData = {
   longitude: number;
   altitude: number;
   aiDescription: string;
+  climaticZone?: string | null;
+  climaticZoneRule?: string | null;
 };
 
 export type ActionState = {

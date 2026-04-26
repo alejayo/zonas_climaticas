@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import type { ActionState, CatastroData } from '@/lib/types';
 import { geographicContextDescription } from '@/ai/flows/geographic-context-description';
-import { getIneCode } from '@/lib/provinces';
+import { getIneCode, getClimaticZone } from '@/lib/provinces';
 
 const FormSchema = z.object({
   ref: z.string({invalid_type_error: "La referencia catastral debe ser un texto."})
@@ -116,8 +116,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     const altitude = elevationData.elevation?.[0] ?? 0;
     const aiDescription = aiDescriptionResponse.description;
 
-    // Get INE Code
     const ineCode = province ? getIneCode(province) : null;
+    const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     const result: CatastroData = {
         address,
@@ -130,6 +130,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         longitude,
         altitude,
         aiDescription,
+        climaticZone: climaticZoneInfo?.zone,
+        climaticZoneRule: climaticZoneInfo?.rule,
     };
     
     return { data: result, error: null };
