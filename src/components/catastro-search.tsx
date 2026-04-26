@@ -66,7 +66,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
                 shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
             });
 
-            // Usamos CartoDB Voyager para una vista más limpia estilo Google Maps
             leafletMap.current = L.map(mapRef.current).setView([40.416775, -3.70379], 6);
             
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -85,7 +84,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
-            // Mantenemos el zoom si ya es alto, si es bajo (vista inicial) hacemos zoom al punto
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             leafletMap.current.setView(currentPos, targetZoom);
             

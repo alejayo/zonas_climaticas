@@ -136,7 +136,6 @@ export async function getFullData(displayRef: string, latitude: number, longitud
     let address = null;
     let constructionYear = null;
 
-    // Si es referencia de parcela, buscamos el primer inmueble (hijo) para datos técnicos
     if (displayRef.length === 14) {
         const firstRcMatch = motherDataXml.match(/<rc>([\s\S]*?)<\/rc>/i);
         if (firstRcMatch) {
