@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { ActionState, CatastroData } from '@/lib/types';
@@ -36,7 +35,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         }
     };
 
-    // 1. Obtener datos de la referencia madre para asegurar municipio/provincia
+    // 1. Obtener datos de la referencia para municipio/provincia
     const motherRef = displayRef.substring(0, 14);
     const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${motherRef}`;
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
@@ -58,7 +57,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres) para dirección y año exactos
+    // 2. Intentar obtener una referencia de 20 caracteres para datos específicos (año y dirección exacta)
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -72,7 +71,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
                 
-                // Intentamos sacar la primera RC de la lista (vrc) que suele tener dirección y año
+                // Buscamos el primer bloque <rc> que suele contener car/cc1/cc2
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
@@ -84,7 +83,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
                         
-                        // Re-consultamos los datos de esa RC específica para obtener dirección y año correctos
+                        // Re-consultamos los datos de esa RC de 20 caracteres para obtener dirección y año específicos
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -80,6 +79,7 @@ export default function CatastroSearch() {
         if (state.data) {
             setRcValue(state.data.ref);
             setMapPos([state.data.latitude, state.data.longitude]);
+            setAddressQuery(state.data.address); // Sincroniza la dirección con los resultados
         }
     }, [state.data]);
 
@@ -88,10 +88,12 @@ export default function CatastroSearch() {
         const newState = await searchByCoords(lat, lng);
         setIsSearching(false);
         if (newState.data) {
+            // Actualizamos el estado manualmente ya que searchByCoords no es un formAction directo aquí
             state.data = newState.data;
             state.error = null;
             setRcValue(newState.data.ref);
             setMapPos([lat, lng]);
+            setAddressQuery(newState.data.address);
         } else {
             state.error = newState.error;
             state.data = null;
@@ -124,16 +126,14 @@ export default function CatastroSearch() {
         }
     };
 
-    // Función para construir el enlace a la ficha del inmueble
     const getCatastroLink = (rc: string) => {
-        if (rc.length < 14) return '#';
+        if (!rc || rc.length < 14) return '#';
         const rc1 = rc.substring(0, 7);
         const rc2 = rc.substring(7, 14);
-        const car = rc.substring(14, 18);
-        const cc1 = rc.substring(18, 19);
-        const cc2 = rc.substring(19, 20);
-        
-        if (rc.length === 20) {
+        if (rc.length >= 20) {
+            const car = rc.substring(14, 18);
+            const cc1 = rc.substring(18, 19);
+            const cc2 = rc.substring(19, 20);
             return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc1}&rc2=${rc2}&car=${car}&cc1=${cc1}&cc2=${cc2}`;
         }
         return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc1}&rc2=${rc2}`;
@@ -338,7 +338,7 @@ export default function CatastroSearch() {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="flex items-center gap-6">
-                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
+                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
                                         <span className="text-4xl font-bold">{state.data.climaticZone}</span>
                                     </div>
                                     <div className="space-y-2">
