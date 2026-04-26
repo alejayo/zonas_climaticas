@@ -10,10 +10,10 @@ const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/reverseGeocode';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
-  const regex = new RegExp(`<${tag}>(.*?)</${tag}>`);
+  const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
   const match = xml.match(regex);
   if (match && match[1]) {
-      return match[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      return match[1].trim().replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   }
   return null;
 };
@@ -41,6 +41,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
     const motherDataXml = await motherDataRes.text();
     
+    // Datos base de la madre
     let address = parseXmlTag(motherDataXml, 'ldt');
     let constructionYear = parseXmlTag(motherDataXml, 'ant');
     const municipality = parseXmlTag(motherDataXml, 'nm');
@@ -49,7 +50,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const provinceCode = parseXmlTag(motherDataXml, 'cp');
     const municipalityCode = parseXmlTag(motherDataXml, 'cm');
 
-    // 2. Buscar silenciosamente una referencia "hija" (20 caracteres) para obtener dirección específica y año
+    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres) para Dirección y Año precisos
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -62,7 +63,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
-                // Priorizamos dirección y año de la hija aunque no mostremos su referencia
+                // Preferimos los datos de la hija para dirección y año
                 const childAddress = parseXmlTag(childXml, 'ldt');
                 const childYear = parseXmlTag(childXml, 'ant');
                 if (childAddress) address = childAddress;
@@ -91,7 +92,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: displayRef.substring(0, 14), // Siempre mostramos la de 14
+        ref: displayRef.substring(0, 14), // Siempre mostramos la de 14 como principal
         address: address || 'No disponible',
         municipality,
         province,
@@ -114,8 +115,6 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
     try {
         const motherRef = ref.substring(0, 14);
-        
-        // Obtener coordenadas para localizar el punto
         const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${motherRef}`;
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();

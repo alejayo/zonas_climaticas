@@ -19,7 +19,6 @@ import 'leaflet/dist/leaflet.css';
 
 const initialState: ActionState = { data: null, error: null };
 
-// Dynamic Map Component to avoid SSR issues
 const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: number, lng: number) => void, currentPos?: [number, number] }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const leafletMap = useRef<any>(null);
@@ -28,8 +27,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
     useEffect(() => {
         if (typeof window !== 'undefined' && mapRef.current && !leafletMap.current) {
             const L = require('leaflet');
-            
-            // Fix Leaflet icons
             delete L.Icon.Default.prototype._getIconUrl;
             L.Icon.Default.mergeOptions({
                 iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -78,7 +75,6 @@ export default function CatastroSearch() {
     const [isSearching, setIsSearching] = useState(false);
     const [mapPos, setMapPos] = useState<[number, number] | undefined>(undefined);
 
-    // Sync state when results come back
     useEffect(() => {
         if (state.data) {
             setRcValue(state.data.ref);
@@ -97,6 +93,7 @@ export default function CatastroSearch() {
             setMapPos([lat, lng]);
         } else {
             state.error = newState.error;
+            state.data = null;
         }
     };
 
@@ -150,7 +147,6 @@ export default function CatastroSearch() {
                             />
                             <SubmitButton />
                         </div>
-                        <p className="text-xs text-muted-foreground italic">Introduce los 14 o 20 caracteres de la referencia catastral.</p>
                     </form>
                 </TabsContent>
 
@@ -160,7 +156,7 @@ export default function CatastroSearch() {
                             <Input 
                                 value={addressQuery}
                                 onChange={handleAddressInput}
-                                placeholder="Calle, número, municipio..." 
+                                placeholder="Escribe una calle, municipio..." 
                                 className="flex-grow text-lg h-12"
                             />
                         </div>
@@ -187,23 +183,19 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
                     <p className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Haz clic en el mapa para obtener la referencia catastral exacta de ese punto.
+                        <CheckCircle2 className="h-3 w-3" /> Haz clic en el mapa para obtener la referencia catastral de ese punto.
                     </p>
                 </TabsContent>
             </Tabs>
 
             <Separator />
 
-            {(isSearching || (state.data === null && !state.error && !isSearching)) && (
-                <div className="text-center text-muted-foreground p-12 border-2 border-dashed rounded-lg bg-card/50">
-                    {isSearching ? (
-                        <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                            <p className="text-lg">Consultando servicios del Catastro e IGN...</p>
-                        </div>
-                    ) : (
-                        <p className="text-lg">Selecciona un método para comenzar la búsqueda.</p>
-                    )}
+            {isSearching && (
+                <div className="text-center p-12 border-2 border-dashed rounded-lg bg-card/50">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <p className="text-lg font-medium">Consultando servicios del Catastro e IGN...</p>
+                    </div>
                 </div>
             )}
 
@@ -247,7 +239,7 @@ export default function CatastroSearch() {
                                 <div className="pt-4 border-t">
                                     <div className="flex items-start gap-3">
                                         <div className="mt-1 p-2 rounded-full bg-primary/10">
-                                            <Building className="h-4 w-4 text-primary" />
+                                            <Navigation className="h-4 w-4 text-primary" />
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Dirección Oficial (Cartociudad IGN)</p>
@@ -277,7 +269,6 @@ export default function CatastroSearch() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-muted-foreground hover:text-primary transition-colors"
-                                        title="Abrir en Sede Electrónica del Catastro"
                                     >
                                         <ExternalLink className="h-4 w-4" />
                                     </a>
@@ -285,7 +276,7 @@ export default function CatastroSearch() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Dirección (Catastro)</p>
-                                <p className="text-base">{state.data.address}</p>
+                                <p className="text-base font-medium">{state.data.address}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Municipio</p>
@@ -315,7 +306,7 @@ export default function CatastroSearch() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Año de Construcción</p>
-                                <p className="text-base font-semibold">{state.data.constructionYear || 'No disponible'}</p>
+                                <p className="text-base font-bold text-primary">{state.data.constructionYear || 'No disponible'}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -329,19 +320,32 @@ export default function CatastroSearch() {
                                     <span>Zona Climática (DB-HE)</span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex items-center gap-6">
-                                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
-                                    <span className="text-4xl font-bold">{state.data.climaticZone}</span>
-                                </div>
-                                <div>
-                                    <p className="text-lg font-medium text-foreground">
-                                        Zona climática según CTE: <span className="font-bold">{state.data.climaticZone}</span>
-                                    </p>
-                                    {state.data.climaticZoneRule && (
-                                        <p className="text-sm text-muted-foreground mt-1 bg-background/50 p-2 rounded border inline-block">
-                                            Rango: {state.data.climaticZoneRule}
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
+                                        <span className="text-4xl font-bold">{state.data.climaticZone}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-lg font-medium text-foreground">
+                                            Zona climática CTE: <span className="font-bold">{state.data.climaticZone}</span>
                                         </p>
-                                    )}
+                                        <div className="flex flex-wrap gap-2">
+                                            <div className="text-xs bg-background/80 border px-3 py-1.5 rounded-md flex flex-col gap-0.5">
+                                                <span className="text-muted-foreground uppercase font-semibold">Provincia de cálculo</span>
+                                                <span className="font-bold">{state.data.province}</span>
+                                            </div>
+                                            <div className="text-xs bg-background/80 border px-3 py-1.5 rounded-md flex flex-col gap-0.5">
+                                                <span className="text-muted-foreground uppercase font-semibold">Altitud correspondiente</span>
+                                                <span className="font-bold">{state.data.altitude.toFixed(0)} m</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-background/50 rounded-lg border border-primary/10">
+                                    <p className="text-sm font-medium flex items-center gap-2">
+                                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                                        Rango de cálculo aplicado: <span className="font-bold">{state.data.climaticZoneRule}</span>
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
