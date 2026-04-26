@@ -638,46 +638,6 @@ export default function CatastroSearch() {
                         </CardContent>
                       </Card>
                     )}
-
-                    {/* 5. Otros Registros Regionales */}
-                    {state.data.ceeRegistry && (
-                        <Card className="border-orange-500/20 bg-orange-50/50">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl">
-                                    < Zap className="text-orange-600 h-6 w-6"/>
-                                    <span>Otros Enlaces de Interés</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-semibold text-orange-800">{state.data.ceeRegistry.name}</p>
-                                        <p className="text-xs text-muted-foreground">{state.data.ceeRegistry.description}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button asChild variant="outline" size="sm" className="bg-white hover:bg-orange-100 border-orange-200">
-                                            <a href={state.data.ceeRegistry.url} target="_blank" rel="noopener noreferrer" className="gap-2">
-                                                <Search className="h-4 w-4" /> Buscar en Registro
-                                            </a>
-                                        </Button>
-                                        {state.data.ceeRegistry.visorUrl && (
-                                            <Button asChild variant="default" size="sm" className="bg-orange-600 hover:bg-orange-700">
-                                                <a href={state.data.ceeRegistry.visorUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
-                                                    <MapIcon className="h-4 w-4" /> Ver en Visor Público
-                                                </a>
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                                <Alert className="bg-blue-50 border-blue-200 text-blue-800 py-3">
-                                    <Info className="h-4 w-4 text-blue-600" />
-                                    <AlertDescription className="text-xs">
-                                        Los registros de CEE son gestionados de forma independiente por cada Comunidad Autónoma. Haz clic en los botones superiores para verificar si este inmueble tiene un certificado vigente.
-                                    </AlertDescription>
-                                </Alert>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
             )}
         </div>
