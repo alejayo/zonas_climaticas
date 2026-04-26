@@ -81,8 +81,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
-            // Si el zoom es el inicial muy alejado, lo centramos a nivel de edificio.
-            // Si el usuario ya está navegando (zoom > 6), mantenemos su escala preferida.
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             
             leafletMap.current.setView(currentPos, targetZoom);
@@ -136,7 +134,6 @@ export default function CatastroSearch() {
             setRcValue(newState.data.ref);
             setMapPos([lat, lng]);
             setAddressQuery(newState.data.address);
-            // Actualizamos el estado para renderizar los resultados
             state.data = newState.data;
             state.error = null;
         } else {
@@ -424,24 +421,25 @@ export default function CatastroSearch() {
                                     <p className="text-xs text-muted-foreground uppercase font-bold">Validez</p>
                                     <p className="text-sm font-medium flex items-center gap-1"><Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}</p>
                                   </div>
-                                  <div className="col-span-full pt-2 border-t space-y-3">
-                                    <div className="flex flex-wrap items-center gap-4">
+                                  <div className="col-span-full pt-2 border-t space-y-4">
+                                    <div className="flex flex-wrap items-center gap-6">
                                       {state.data.ieeGva.emisiones && (
                                         <div className="flex items-center gap-2">
-                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones:</span>
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones IEE:</span>
                                           <LetraBadge letra={state.data.ieeGva.emisiones} size="sm" />
                                         </div>
                                       )}
                                       {state.data.ieeGva.consumo && (
                                         <div className="flex items-center gap-2">
-                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo:</span>
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo IEE:</span>
                                           <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
                                         </div>
                                       )}
-                                      <div className="w-full flex flex-col gap-1 mt-1">
-                                        {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
-                                        {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
-                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 border-l-2 border-green-100 pl-4 py-1">
+                                      {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold flex items-center gap-2"><AlertTriangle className="h-3 w-3" /> {state.data.ieeGva.count_intu} intervenciones urgentes</span>}
+                                      {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold flex items-center gap-2"><Zap className="h-3 w-3" /> {state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
+                                      {state.data.ieeGva.count_intu === 0 && state.data.ieeGva.count_intm === 0 && <span className="text-xs text-green-600 font-medium">Sin intervenciones pendientes</span>}
                                     </div>
                                   </div>
                                   {state.data.ieeGva.urlgesie && (
@@ -511,30 +509,52 @@ export default function CatastroSearch() {
                                         </div>
                                       </div>
                                     </div>
-                                  ) : <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay certificado específico.</p>}
+                                  ) : <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay certificado específico para esta unidad.</p>}
 
                                   {state.data.ceeGva.others && state.data.ceeGva.others.length > 0 && (
-                                    <Accordion type="single" collapsible className="w-full mt-4">
+                                    <Accordion type="single" collapsible className="w-full mt-2">
                                       <AccordionItem value="others-table" className="border-none">
-                                        <AccordionTrigger className="hover:no-underline py-2 group">
+                                        <AccordionTrigger className="hover:no-underline py-2 group bg-slate-100/50 rounded-md px-4">
                                           <div className="flex items-center gap-2 text-[11px] font-bold text-green-800 uppercase tracking-wide">
                                             <Building className="h-4 w-4" /> Otros certificados del edificio ({state.data.ceeGva.others.length})
                                           </div>
                                         </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="overflow-x-auto rounded-md border border-slate-200">
-                                            <table className="w-full text-[11px]">
+                                        <AccordionContent className="pt-4">
+                                          <div className="overflow-x-auto rounded-md border border-slate-200 shadow-sm">
+                                            <table className="w-full text-[11px] border-collapse">
                                               <thead>
-                                                <tr className="bg-slate-50 border-b"><th className="px-4 py-2 text-left">Ref. catastral</th><th className="px-4 py-2 text-center">Emisiones</th><th className="px-4 py-2 text-center">Consumo</th><th className="px-4 py-2 text-left">Validez</th><th className="px-4 py-2"></th></tr>
+                                                <tr className="bg-slate-50 border-b">
+                                                  <th className="px-4 py-3 text-left font-bold text-slate-700">Ref. catastral</th>
+                                                  <th className="px-4 py-3 text-center font-bold text-slate-700">Emisiones</th>
+                                                  <th className="px-4 py-3 text-center font-bold text-slate-700">Consumo</th>
+                                                  <th className="px-4 py-3 text-left font-bold text-slate-700">Válido hasta</th>
+                                                  <th className="px-4 py-3"></th>
+                                                </tr>
                                               </thead>
-                                              <tbody className="bg-white divide-y">
+                                              <tbody className="bg-white divide-y divide-slate-100">
                                                 {state.data.ceeGva.others.map((item, idx) => (
-                                                  <tr key={idx} className="hover:bg-slate-50/50">
-                                                    <td className="px-4 py-3 font-mono font-bold">{item.ref}</td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-center"><div className="flex items-center justify-center gap-2"><LetraBadge letra={item.emicalif} size="sm" /><span>{item.emitotal} kgCO₂</span></div></td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-center"><div className="flex items-center justify-center gap-2"><LetraBadge letra={item.concalif} size="sm" /><span>{item.contotal} kWh</span></div></td>
-                                                    <td className="px-4 py-3">{item.validohasta}</td>
-                                                    <td className="px-4 py-3 text-right">{item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary"><ExternalLink className="h-4 w-4" /></a>}</td>
+                                                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                                    <td className="px-4 py-3 font-mono font-bold text-slate-600">{item.ref}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                                                      <div className="flex items-center justify-center gap-2">
+                                                        <LetraBadge letra={item.emicalif} size="sm" />
+                                                        <span className="font-bold text-slate-700">{item.emitotal} kgCO₂</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                                                      <div className="flex items-center justify-center gap-2">
+                                                        <LetraBadge letra={item.concalif} size="sm" />
+                                                        <span className="font-bold text-slate-700">{item.contotal} kWh</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium text-slate-600">{item.validohasta}</td>
+                                                    <td className="px-4 py-3 text-right">
+                                                      {item.url && (
+                                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 transition-colors">
+                                                          <ExternalLink className="h-4 w-4" />
+                                                        </a>
+                                                      )}
+                                                    </td>
                                                   </tr>
                                                 ))}
                                               </tbody>
