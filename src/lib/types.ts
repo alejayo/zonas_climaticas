@@ -1,4 +1,3 @@
-
 export type IEEData = {
   numiee?: string;
   urlgesie?: string;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { searchCatastro, searchByCoords } from '@/app/actions';
-import type { ActionState, CEEItem } from '@/lib/types';
+import type { ActionState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import {
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
     Navigation, CheckCircle2, ExternalLink, Info, FileText,
-    Zap, ClipboardCheck, History, Calendar
+    Zap, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
@@ -228,9 +228,6 @@ export default function CatastroSearch() {
                             <MapView onLocationSelect={handleMapSelect} currentPos={mapPos} />
                         </CardContent>
                     </Card>
-                    <p className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Haz clic en el mapa para obtener la referencia catastral de ese punto.
-                    </p>
                 </TabsContent>
             </Tabs>
 
@@ -255,7 +252,6 @@ export default function CatastroSearch() {
 
             {state.data && !isSearching && (
                 <div className="space-y-6 animate-in fade-in-50 duration-500">
-                    {/* 1. Datos de Localización */}
                     <Card className="border-accent/20">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
@@ -297,7 +293,6 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 2. Información Catastral */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
@@ -310,12 +305,7 @@ export default function CatastroSearch() {
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Referencia Catastral</p>
                                 <div className="flex items-center gap-2">
                                     <p className="text-lg font-mono font-bold text-primary">{state.data.ref}</p>
-                                    <a 
-                                        href={getCatastroLink(state.data.ref)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-muted-foreground hover:text-primary transition-colors"
-                                    >
+                                    <a href={getCatastroLink(state.data.ref)} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                                         <ExternalLink className="h-4 w-4" />
                                     </a>
                                 </div>
@@ -326,25 +316,11 @@ export default function CatastroSearch() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Municipio</p>
-                                <p className="text-base">
-                                    {state.data.municipality} 
-                                    {state.data.municipalityIneCode && (
-                                        <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">
-                                            INE: {state.data.municipalityIneCode}
-                                        </span>
-                                    )}
-                                </p>
+                                <p className="text-base">{state.data.municipality}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Provincia</p>
-                                <p className="text-base">
-                                    {state.data.province} 
-                                    {state.data.ineCode && (
-                                        <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground font-mono ml-2">
-                                            INE: {state.data.ineCode}
-                                        </span>
-                                    )}
-                                </p>
+                                <p className="text-base">{state.data.province}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Código Postal</p>
@@ -357,7 +333,6 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 3. Zona Climática */}
                     <Card className="border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
@@ -414,12 +389,7 @@ export default function CatastroSearch() {
                                                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Registro CTE:</span>
                                                         <span className="text-[11px] font-mono font-bold text-primary">{state.data.alternativeClimaticZoneReference}</span>
                                                     </div>
-                                                    <a 
-                                                        href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium"
-                                                    >
+                                                    <a href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium">
                                                         Ver Documentos Reconocidos <ExternalLink className="h-2 w-2" />
                                                     </a>
                                                 </div>
@@ -431,7 +401,6 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 4. Comunitat Valenciana - IEE / CEE Detallado */}
                     {(state.data.ieeGva || state.data.ceeGva) && (
                       <Card className="border-green-600/20 bg-green-50/20">
                         <CardHeader>
@@ -441,7 +410,6 @@ export default function CatastroSearch() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                          {/* IEE SECTION */}
                           {state.data.ieeGva && (
                             <div className="space-y-3">
                               <h4 className="text-sm font-bold flex items-center gap-2 text-green-700">
@@ -451,74 +419,50 @@ export default function CatastroSearch() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-white border border-green-200">
                                   <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground uppercase font-bold">Estado</p>
-                                    <div className="flex items-center gap-2">
-                                      <Badge className={state.data.ieeGva.evaluado === 'Completo' ? 'bg-green-600' : 'bg-orange-500'}>
-                                        {state.data.ieeGva.evaluado}
-                                      </Badge>
-                                    </div>
+                                    <Badge className={state.data.ieeGva.evaluado === 'Completo' ? 'bg-green-600' : 'bg-orange-500'}>{state.data.ieeGva.evaluado}</Badge>
                                   </div>
                                   <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground uppercase font-bold">Validez</p>
-                                    <p className="text-sm font-medium flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}
-                                    </p>
+                                    <p className="text-sm font-medium flex items-center gap-1"><Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}</p>
                                   </div>
-                                  
-                                  {/* Emisiones, Consumo e Intervenciones IEE */}
                                   <div className="col-span-full pt-2 border-t space-y-3">
-                                    {(state.data.ieeGva.emisiones || state.data.ieeGva.consumo) && (
-                                      <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                        {state.data.ieeGva.emisiones && (
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones IEE:</span>
-                                            <LetraBadge letra={state.data.ieeGva.emisiones} size="sm" />
-                                          </div>
-                                        )}
-                                        {state.data.ieeGva.consumo && (
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo IEE:</span>
-                                            <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {(state.data.ieeGva.count_intu! > 0 || state.data.ieeGva.count_intm! > 0) && (
-                                      <div className="flex flex-col gap-1 mt-1 border-t pt-2">
-                                        {state.data.ieeGva.count_intu! > 0 && (
-                                          <p className="text-xs text-red-600 font-bold flex items-center gap-1">
-                                            <AlertTriangle className="h-3 w-3" /> {state.data.ieeGva.count_intu} intervenciones urgentes
-                                          </p>
-                                        )}
-                                        {state.data.ieeGva.count_intm! > 0 && (
-                                          <p className="text-xs text-orange-600 font-bold flex items-center gap-1">
-                                            <Zap className="h-3 w-3" /> {state.data.ieeGva.count_intm} intervenciones a corto plazo
-                                          </p>
-                                        )}
-                                      </div>
-                                    )}
+                                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                      {state.data.ieeGva.emisiones && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones IEE:</span>
+                                          <LetraBadge letra={state.data.ieeGva.emisiones} size="sm" />
+                                        </div>
+                                      )}
+                                      {state.data.ieeGva.consumo && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo IEE:</span>
+                                          <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
+                                        </div>
+                                      )}
+                                      {(state.data.ieeGva.count_intu! > 0 || state.data.ieeGva.count_intm! > 0) && (
+                                        <div className="flex items-center gap-4">
+                                          {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
+                                          {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-
                                   {state.data.ieeGva.urlgesie && (
                                     <div className="col-span-full pt-2">
                                       <Button variant="outline" size="sm" asChild className="w-full text-xs h-8">
-                                        <a href={state.data.ieeGva.urlgesie} target="_blank" rel="noopener noreferrer">
-                                          Ver Informe GESIEE <ExternalLink className="h-3 w-3 ml-1" />
-                                        </a>
+                                        <a href={state.data.ieeGva.urlgesie} target="_blank" rel="noopener noreferrer">Ver Informe GESIEE <ExternalLink className="h-3 w-3 ml-1" /></a>
                                       </Button>
                                     </div>
                                   )}
                                 </div>
                               ) : (
                                 <Alert className="bg-white border-red-200">
-                                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                                  <AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado para este edificio.</AlertDescription>
+                                  <AlertTriangle className="h-4 w-4 text-red-600" /><AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado.</AlertDescription>
                                 </Alert>
                               )}
                             </div>
                           )}
 
-                          {/* CEE SECTION */}
                           {state.data.ceeGva && (
                             <div className="space-y-3 pt-2">
                               <h4 className="text-sm font-bold flex items-center gap-2 text-green-700">
@@ -529,94 +473,50 @@ export default function CatastroSearch() {
                                   {state.data.ceeGva.exactMatch ? (
                                     <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 shadow-sm">
                                       <div className="flex items-center justify-between mb-3">
-                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Certificado Inmueble Exacto</p>
-                                        <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 text-[10px] font-mono font-bold">
-                                          {state.data.ceeGva.exactMatch.ref}
-                                        </Badge>
+                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Inmueble Exacto</p>
+                                        <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 text-[10px] font-mono font-bold">{state.data.ceeGva.exactMatch.ref}</Badge>
                                       </div>
                                       <div className="flex items-center justify-between gap-4">
                                         <div className="flex gap-6">
                                           <div className="text-center">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Emisiones</p>
-                                            <div className="flex items-center gap-2">
-                                              <LetraBadge letra={state.data.ceeGva.exactMatch.emicalif} />
-                                              <span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.emitotal} kgCO₂</span>
-                                            </div>
+                                            <div className="flex items-center gap-2"><LetraBadge letra={state.data.ceeGva.exactMatch.emicalif} /><span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.emitotal} kgCO₂</span></div>
                                           </div>
                                           <div className="text-center">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Consumo</p>
-                                            <div className="flex items-center gap-2">
-                                              <LetraBadge letra={state.data.ceeGva.exactMatch.concalif} />
-                                              <span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.contotal} kWh</span>
-                                            </div>
+                                            <div className="flex items-center gap-2"><LetraBadge letra={state.data.ceeGva.exactMatch.concalif} /><span className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.contotal} kWh</span></div>
                                           </div>
                                         </div>
-                                        <div className="text-right flex-grow">
-                                          <p className="text-[11px] font-bold text-blue-900 mb-1">
-                                            Vence: {state.data.ceeGva.exactMatch.validohasta}
-                                          </p>
-                                          {state.data.ceeGva.exactMatch.url && (
-                                            <a href={state.data.ceeGva.exactMatch.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:underline flex items-center justify-end gap-1">
-                                              Descargar PDF <ExternalLink className="h-3 w-3" />
-                                            </a>
-                                          )}
+                                        <div className="text-right">
+                                          <p className="text-[11px] font-bold text-blue-900 mb-1">Vence: {state.data.ceeGva.exactMatch.validohasta}</p>
+                                          {state.data.ceeGva.exactMatch.url && <a href={state.data.ceeGva.exactMatch.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:underline">Descargar PDF <ExternalLink className="h-3 w-3 inline" /></a>}
                                         </div>
                                       </div>
                                     </div>
-                                  ) : (
-                                    <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay un certificado específico para este inmueble concreto.</p>
-                                  )}
+                                  ) : <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay certificado específico.</p>}
 
                                   {state.data.ceeGva.others && state.data.ceeGva.others.length > 0 && (
                                     <Accordion type="single" collapsible className="w-full mt-4">
                                       <AccordionItem value="others-table" className="border-none">
                                         <AccordionTrigger className="hover:no-underline py-2 group">
                                           <div className="flex items-center gap-2 text-[11px] font-bold text-green-800 uppercase tracking-wide">
-                                            <Building className="h-4 w-4" />
-                                            Otros certificados del edificio ({state.data.ceeGva.others.length})
+                                            <Building className="h-4 w-4" /> Otros certificados del edificio ({state.data.ceeGva.others.length})
                                           </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="pt-2">
-                                          <div className="overflow-x-auto rounded-md border border-slate-200 shadow-inner">
-                                            <table className="w-full text-[11px] border-collapse">
+                                          <div className="overflow-x-auto rounded-md border border-slate-200">
+                                            <table className="w-full text-[11px]">
                                               <thead>
-                                                <tr className="bg-slate-50 border-b border-slate-200">
-                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Ref. catastral</th>
-                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Emisiones</th>
-                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Consumo</th>
-                                                  <th className="px-4 py-2 text-left font-bold text-slate-600">Válido hasta</th>
-                                                  <th className="px-4 py-2 w-10"></th>
-                                                </tr>
+                                                <tr className="bg-slate-50 border-b"><th className="px-4 py-2 text-left">Ref. catastral</th><th className="px-4 py-2 text-left">Emisiones</th><th className="px-4 py-2 text-left">Consumo</th><th className="px-4 py-2 text-left">Validez</th><th className="px-4 py-2"></th></tr>
                                               </thead>
-                                              <tbody className="bg-white divide-y divide-slate-100">
+                                              <tbody className="bg-white divide-y">
                                                 {state.data.ceeGva.others.map((item, idx) => (
-                                                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-4 py-3 font-mono font-bold text-slate-700">{item.ref}</td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                      <div className="flex items-center gap-2">
-                                                        <LetraBadge letra={item.emicalif} size="sm" />
-                                                        <span className="font-bold text-slate-700">{item.emitotal} kgCO₂</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                      <div className="flex items-center gap-2">
-                                                        <LetraBadge letra={item.concalif} size="sm" />
-                                                        <span className="font-bold text-slate-700">{item.contotal} kWh</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-600 font-medium">{item.validohasta}</td>
-                                                    <td className="px-4 py-3 text-right">
-                                                      {item.url && (
-                                                        <a 
-                                                          href={item.url} 
-                                                          target="_blank" 
-                                                          rel="noopener noreferrer" 
-                                                          className="text-primary hover:text-primary/80"
-                                                        >
-                                                          <ExternalLink className="h-4 w-4" />
-                                                        </a>
-                                                      )}
-                                                    </td>
+                                                  <tr key={idx} className="hover:bg-slate-50/50">
+                                                    <td className="px-4 py-3 font-mono font-bold">{item.ref}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap"><div className="flex items-center gap-2"><LetraBadge letra={item.emicalif} size="sm" /><span>{item.emitotal} kgCO₂</span></div></td>
+                                                    <td className="px-4 py-3 whitespace-nowrap"><div className="flex items-center gap-2"><LetraBadge letra={item.concalif} size="sm" /><span>{item.contotal} kWh</span></div></td>
+                                                    <td className="px-4 py-3">{item.validohasta}</td>
+                                                    <td className="px-4 py-3 text-right">{item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary"><ExternalLink className="h-4 w-4" /></a>}</td>
                                                   </tr>
                                                 ))}
                                               </tbody>
@@ -627,12 +527,7 @@ export default function CatastroSearch() {
                                     </Accordion>
                                   )}
                                 </div>
-                              ) : (
-                                <Alert className="bg-white border-red-200">
-                                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                                  <AlertDescription className="text-sm text-red-700 font-medium">No hay certificados registrados para esta finca.</AlertDescription>
-                                </Alert>
-                              )}
+                              ) : <Alert className="bg-white border-red-200"><AlertTriangle className="h-4 w-4 text-red-600" /><AlertDescription className="text-sm text-red-700 font-medium">No hay certificados registrados.</AlertDescription></Alert>}
                             </div>
                           )}
                         </CardContent>

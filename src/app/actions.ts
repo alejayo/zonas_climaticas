@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { ActionState, CatastroData, IEEData, CEEData, CEEItem } from '@/lib/types';
@@ -15,7 +14,6 @@ const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
 const parseXmlValue = (xml: string, tag: string): string | null => {
-  // Matches <anyprefix:tag ...>value</anyprefix:tag>
   const regex = new RegExp(`<([^/>]*?:)?${tag}[^>]*>([\\s\\S]*?)<\\/([^>]*?:)?${tag}>`, 'i');
   const match = xml.match(regex);
   if (match && match[2]) {
@@ -80,7 +78,6 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
     if (!response.ok) return null;
     const xml = await response.text();
     
-    // Extract all featureMembers
     const featureRegex = /<[^>]*?featureMember[^>]*>([\s\S]*?)<\/[^>]*?featureMember>/gi;
     const members = xml.match(featureRegex) || [];
     
@@ -133,16 +130,6 @@ const getCEERegistry = (province: string | null): CatastroData['ceeRegistry'] =>
       url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
       visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
       description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
-    },
-    'MADRID': {
-      name: 'Registro CEE de la C. de Madrid',
-      url: 'https://gestiona.madrid.org/reee_consulta/',
-      description: 'Portal de consulta de certificados de eficiencia energética de Madrid.'
-    },
-    'BARCELONA': {
-      name: 'ICAEN (Cataluña)',
-      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
-      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
     }
   };
 
@@ -185,7 +172,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    // Force finding a 20-char RC if we don't have year/detailed address
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -199,7 +185,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
-                // Check if we have multiple units (division horizontal)
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlValue(firstRcMatch[0], 'pc1');
@@ -210,10 +195,8 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         const candidateRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                        // Only override finalRef if it was a 14-char search
                         if (finalRef.length < 20) finalRef = candidateRef;
                         
-                        // Fetch the details of the specific unit to get Year and Address
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {
@@ -247,7 +230,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
     const alternativeZoneInfo = getAlternativeClimaticZone(municipalityIneCode);
 
-    // Fetch extra data for Comunitat Valenciana
     let ieeGva = null;
     let ceeGva = null;
     const isCV = province && ['ALICANTE', 'ALACANT', 'CASTELLON', 'CASTELLO', 'VALENCIA', 'VALÈNCIA'].some(v => province.toUpperCase().includes(v));
