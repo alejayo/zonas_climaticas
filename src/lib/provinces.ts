@@ -1,3 +1,6 @@
+
+import { alternativeClimaticZones } from './alternative-climatic-zones';
+
 export const provinceIneCodes = new Map<string, string>([
     ['ALAVA', '01'], ['ARABA', '01'],
     ['ALBACETE', '02'],
@@ -169,4 +172,12 @@ export function getClimaticZone(provinceName: string, altitude: number): { zone:
     }
     
     return null;
+}
+
+/**
+ * Busca una zona climática alternativa en el Registro General de Documentos Reconocidos del CTE
+ */
+export function getAlternativeClimaticZone(municipalityIneCode: string | null): { zone: string; municipality: string } | null {
+  if (!municipalityIneCode) return null;
+  return alternativeClimaticZones.get(municipalityIneCode) || null;
 }

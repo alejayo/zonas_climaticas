@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
-    Navigation, CheckCircle2, ExternalLink 
+    Navigation, CheckCircle2, ExternalLink, Info 
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import 'leaflet/dist/leaflet.css';
@@ -79,7 +80,7 @@ export default function CatastroSearch() {
         if (state.data) {
             setRcValue(state.data.ref);
             setMapPos([state.data.latitude, state.data.longitude]);
-            setAddressQuery(state.data.address); // Sincroniza la dirección con los resultados
+            setAddressQuery(state.data.address); 
         }
     }, [state.data]);
 
@@ -88,7 +89,6 @@ export default function CatastroSearch() {
         const newState = await searchByCoords(lat, lng);
         setIsSearching(false);
         if (newState.data) {
-            // Actualizamos el estado manualmente ya que searchByCoords no es un formAction directo aquí
             state.data = newState.data;
             state.error = null;
             setRcValue(newState.data.ref);
@@ -328,44 +328,61 @@ export default function CatastroSearch() {
                     </Card>
 
                     {/* 3. Zona Climática */}
-                    {state.data.climaticZone && (
-                        <Card className="border-primary/20 bg-primary/5">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl">
-                                    <Thermometer className="text-primary h-6 w-6"/>
-                                    <span>Zona Climática (DB-HE)</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-primary/20">
-                                        <span className="text-4xl font-bold">{state.data.climaticZone}</span>
+                    <Card className="border-primary/20 bg-primary/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                                <Thermometer className="text-primary h-6 w-6"/>
+                                <span>Zona Climática (DB-HE)</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-md">
+                                            <span className="text-2xl font-bold">{state.data.climaticZone || 'N/D'}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold uppercase text-muted-foreground">Zona General CTE</p>
+                                            <p className="text-xs text-muted-foreground italic">{state.data.climaticZoneRule}</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="text-lg font-medium text-foreground">
-                                            Zona climática CTE: <span className="font-bold">{state.data.climaticZone}</span>
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            <div className="text-xs bg-background/80 border px-3 py-1.5 rounded-md flex flex-col gap-0.5">
-                                                <span className="text-muted-foreground uppercase font-semibold">Provincia de cálculo</span>
-                                                <span className="font-bold">{state.data.province}</span>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase">Provincia de cálculo</p>
+                                        <p className="text-sm font-bold">{state.data.province}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase">Altitud aplicada</p>
+                                        <p className="text-sm font-bold">{state.data.altitude.toFixed(0)} m</p>
+                                    </div>
+                                </div>
+
+                                {state.data.alternativeClimaticZone && (
+                                    <div className="bg-background/60 p-4 rounded-lg border-2 border-primary/30 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-2">
+                                            <Info className="h-4 w-4 text-primary opacity-50" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground font-black text-xl shadow-inner">
+                                                    {state.data.alternativeClimaticZone}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-primary uppercase leading-tight">Zona Alternativa</p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase font-medium">Doc. Reconocido CTE</p>
+                                                </div>
                                             </div>
-                                            <div className="text-xs bg-background/80 border px-3 py-1.5 rounded-md flex flex-col gap-0.5">
-                                                <span className="text-muted-foreground uppercase font-semibold">Altitud correspondiente</span>
-                                                <span className="font-bold">{state.data.altitude.toFixed(0)} m</span>
+                                            <Separator className="bg-primary/10" />
+                                            <div>
+                                                <p className="text-[10px] font-medium text-muted-foreground uppercase">Municipio aplicado:</p>
+                                                <p className="text-sm font-bold text-foreground">{state.data.alternativeClimaticZoneMunicipality}</p>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="p-3 bg-background/50 rounded-lg border border-primary/10">
-                                    <p className="text-sm font-medium flex items-center gap-2">
-                                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                                        Rango de cálculo aplicado: <span className="font-bold">{state.data.climaticZoneRule}</span>
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
         </div>

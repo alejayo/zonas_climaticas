@@ -14,6 +14,8 @@ export type CatastroData = {
   ignAddress?: string | null;
   climaticZone?: string | null;
   climaticZoneRule?: string | null;
+  alternativeClimaticZone?: string | null;
+  alternativeClimaticZoneMunicipality?: string | null;
 };
 
 export type ActionState = {

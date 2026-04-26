@@ -1,7 +1,8 @@
+
 'use server';
 
 import type { ActionState, CatastroData } from '@/lib/types';
-import { getIneCode, getClimaticZone } from '@/lib/provinces';
+import { getIneCode, getClimaticZone, getAlternativeClimaticZone } from '@/lib/provinces';
 
 const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
 const CATASTRO_DATA_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';
@@ -58,7 +59,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     let finalRef = displayRef;
 
     // 2. Forzar obtención de referencia de 20 caracteres para datos específicos (año y dirección exacta)
-    // Si la referencia es de 14 o si faltan datos críticos, buscamos la RC completa en ese punto
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -73,7 +73,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
                 
-                // Buscamos el primer bloque <rc> para armar la de 20
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
@@ -85,7 +84,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
                         
-                        // Consultamos los datos específicos de esa RC de 20 caracteres
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {
@@ -117,6 +115,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const provinceIneCode = province ? getIneCode(province) : null;
     const municipalityIneCode = provinceCode && municipalityCode ? `${provinceCode}${municipalityCode}` : null;
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
+    const alternativeZoneInfo = getAlternativeClimaticZone(municipalityIneCode);
 
     return {
         ref: finalRef, 
@@ -133,6 +132,8 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         ignAddress,
         climaticZone: climaticZoneInfo?.zone,
         climaticZoneRule: climaticZoneInfo?.rule,
+        alternativeClimaticZone: alternativeZoneInfo?.zone,
+        alternativeClimaticZoneMunicipality: alternativeZoneInfo?.municipality,
     };
 }
 
