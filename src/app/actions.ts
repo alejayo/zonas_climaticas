@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -37,9 +36,15 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
   const ref = validatedFields.data.ref;
 
   try {
+    const fetchOptions = {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+    };
+
     const [addressResponse, coordsResponse] = await Promise.all([
-      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`),
-      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`)
+      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`, fetchOptions),
+      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`, fetchOptions)
     ]);
 
     if (!addressResponse.ok || !coordsResponse.ok) {
