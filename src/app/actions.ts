@@ -12,12 +12,17 @@ const FormSchema = z.object({
     .regex(/^[A-Z0-9]+$/, "La referencia catastral solo puede contener letras mayúsculas y números."),
 });
 
-const CATASTRO_ADDRESS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';
-const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
+const CATASTRO_ADDRESS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCWcfLib/OVCWcf.svc/rest/Consulta_DNPLOC';
+const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCWcfLib/OVCCoordenadas.svc/rest/Consulta_CPMRC';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 
 const parseXml = <T>(xml: string, tag: string): T | null => {
   const match = xml.match(new RegExp(`<${tag}>(.*?)</${tag}>`));
+  // For tags with attributes like <pc1 xsi:nil="true"/>
+  if (match && match[1] === '') {
+      const selfClosingMatch = xml.match(new RegExp(`<${tag}[^>]*?/>`));
+      if (selfClosingMatch) return null;
+  }
   return match ? (match[1] as T) : null;
 };
 
@@ -67,8 +72,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     }
 
     const address = parseXml<string>(addressXml, 'ldt');
-    const longitudeStr = parseXml<string>(coordsXml, 'xcen');
-    const latitudeStr = parseXml<string>(coordsXml, 'ycen');
+    const longitudeStr = parseXml<string>(coordsXml, 'pc1');
+    const latitudeStr = parseXml<string>(coordsXml, 'pc2');
 
     if (!address || !longitudeStr || !latitudeStr) {
       return { data: null, error: "No se encontraron datos completos para la referencia catastral proporcionada." };
