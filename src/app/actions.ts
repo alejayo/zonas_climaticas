@@ -29,6 +29,74 @@ const getErrorDescription = (xml: string): string => {
     return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
 
+const getCEERegistry = (province: string | null): CatastroData['ceeRegistry'] => {
+  if (!province) return null;
+  const p = province.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  const registries: Record<string, CatastroData['ceeRegistry']> = {
+    'VALENCIA': {
+      name: 'IVACE Energía (C. Valenciana)',
+      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
+      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
+      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
+    },
+    'ALICANTE': {
+      name: 'IVACE Energía (C. Valenciana)',
+      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
+      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
+      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
+    },
+    'CASTELLON': {
+      name: 'IVACE Energía (C. Valenciana)',
+      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
+      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
+      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
+    },
+    'MADRID': {
+      name: 'Registro CEE de la C. de Madrid',
+      url: 'https://gestiona.madrid.org/reee_consulta/',
+      description: 'Portal de consulta de certificados de eficiencia energética de Madrid.'
+    },
+    'BARCELONA': {
+      name: 'ICAEN (Cataluña)',
+      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
+      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
+    },
+    'GIRONA': {
+      name: 'ICAEN (Cataluña)',
+      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
+      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
+    },
+    'LLEIDA': {
+      name: 'ICAEN (Cataluña)',
+      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
+      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
+    },
+    'TARRAGONA': {
+      name: 'ICAEN (Cataluña)',
+      url: 'https://icaen.gencat.cat/ca/detalls/article/Cercador-de-certificats-deficiencia-energetica-dedificis',
+      description: 'Buscador de certificados de eficiencia energética de edificios de Cataluña.'
+    },
+    'SEVILLA': {
+      name: 'Registro CEE de Andalucía',
+      url: 'https://www.juntadeandalucia.es/organismos/economiahaciendayfondoseuropeos/areas/energia/eficiencia-energetica/paginas/registro-certificados-energeticos.html',
+      description: 'Registro de certificados energéticos de edificios de la Junta de Andalucía.'
+    }
+    // Se pueden añadir más comunidades según sea necesario
+  };
+
+  // Búsqueda por coincidencia
+  for (const key in registries) {
+    if (p.includes(key)) return registries[key];
+  }
+
+  return {
+    name: 'Registro Regional CEE',
+    url: 'https://www.codigotecnico.org/RegistroCTE/RegistrosCCAA.html',
+    description: 'Accede al listado oficial de registros por Comunidad Autónoma.'
+  };
+};
+
 async function getFullData(displayRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
     const fetchOptions = {
         headers: {
@@ -36,7 +104,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         }
     };
 
-    // 1. Obtener datos base para municipio/provincia
     const motherRef = displayRef.substring(0, 14);
     const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${motherRef}`;
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
@@ -58,7 +125,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    // 2. Forzar obtención de referencia de 20 caracteres para datos específicos (año y dirección exacta)
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -72,7 +138,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
-                
                 const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
                 if (firstRcMatch) {
                     const firstPc1 = parseXmlTag(firstRcMatch[0], 'pc1');
@@ -83,7 +148,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
                     
                     if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
                         finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                        
                         const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
                         const specificRes = await fetch(specificDataUrl, fetchOptions);
                         if (specificRes.ok) {
@@ -135,6 +199,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         alternativeClimaticZone: alternativeZoneInfo?.zone,
         alternativeClimaticZoneMunicipality: alternativeZoneInfo?.municipality,
         alternativeClimaticZoneReference: alternativeZoneInfo?.reference,
+        ceeRegistry: getCEERegistry(province)
     };
 }
 
