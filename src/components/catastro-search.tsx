@@ -183,12 +183,11 @@ export default function CatastroSearch() {
                 <TabsContent value="rc">
                     <form action={formAction} className="space-y-4">
                         <div className="flex flex-col sm:flex-row gap-2">
+                            <input type="hidden" name="ref" value={rcValue} />
                             <Input 
-                                name="ref" 
                                 value={rcValue}
                                 onChange={(e) => setRcValue(e.target.value)}
                                 placeholder="Ej: 9872023VH5797S..." 
-                                required 
                                 className="flex-grow text-lg h-12 uppercase" 
                                 minLength={14}
                                 maxLength={20}
@@ -359,7 +358,81 @@ export default function CatastroSearch() {
                         </CardContent>
                     </Card>
 
-                    {/* 3. Comunitat Valenciana - IEE / CEE Detallado */}
+                    {/* 3. Zona Climática */}
+                    <Card className="border-primary/20 bg-primary/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                                <Thermometer className="text-primary h-6 w-6"/>
+                                <span>Zona Climática (DB-HE)</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-md">
+                                            <span className="text-2xl font-bold">{state.data.climaticZone || 'N/D'}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold uppercase text-muted-foreground">Zona General CTE</p>
+                                            <p className="text-xs text-muted-foreground italic">{state.data.climaticZoneRule}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase">Provincia de cálculo</p>
+                                        <p className="text-sm font-bold">{state.data.province}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase">Altitud aplicada</p>
+                                        <p className="text-sm font-bold">{state.data.altitude.toFixed(0)} m</p>
+                                    </div>
+                                </div>
+
+                                {state.data.alternativeClimaticZone && (
+                                    <div className="bg-background/60 p-4 rounded-lg border-2 border-primary/30 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-2">
+                                            <Info className="h-4 w-4 text-primary opacity-50" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground font-black text-xl shadow-inner">
+                                                    {state.data.alternativeClimaticZone}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-primary uppercase leading-tight">Zona Alternativa</p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase font-medium">Doc. Reconocido CTE</p>
+                                                </div>
+                                            </div>
+                                            <Separator className="bg-primary/10" />
+                                            <div>
+                                                <p className="text-[10px] font-medium text-muted-foreground uppercase">Municipio aplicado:</p>
+                                                <p className="text-sm font-bold text-foreground">{state.data.alternativeClimaticZoneMunicipality}</p>
+                                            </div>
+                                            {state.data.alternativeClimaticZoneReference && (
+                                                <div className="pt-2">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <FileText className="h-3 w-3 text-muted-foreground" />
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Registro CTE:</span>
+                                                        <span className="text-[11px] font-mono font-bold text-primary">{state.data.alternativeClimaticZoneReference}</span>
+                                                    </div>
+                                                    <a 
+                                                        href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium"
+                                                    >
+                                                        Ver Documentos Reconocidos <ExternalLink className="h-2 w-2" />
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* 4. Comunitat Valenciana - IEE / CEE Detallado */}
                     {(state.data.ieeGva || state.data.ceeGva) && (
                       <Card className="border-green-600/20 bg-green-50/20">
                         <CardHeader>
@@ -436,7 +509,12 @@ export default function CatastroSearch() {
                                 <div className="space-y-4">
                                   {state.data.ceeGva.exactMatch ? (
                                     <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 shadow-sm">
-                                      <p className="text-[10px] font-black text-blue-800 uppercase mb-2 tracking-wider">Certificado Inmueble Exacto</p>
+                                      <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Certificado Inmueble Exacto</p>
+                                        <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 text-[10px] font-mono">
+                                          {state.data.ceeGva.exactMatch.ref}
+                                        </Badge>
+                                      </div>
                                       <div className="flex items-center justify-between gap-4">
                                         <div className="flex gap-4">
                                           <div className="text-center">
@@ -449,48 +527,52 @@ export default function CatastroSearch() {
                                           </div>
                                         </div>
                                         <div className="text-right flex-grow">
-                                          <p className="text-xs font-bold text-blue-900">{state.data.ceeGva.exactMatch.ref}</p>
-                                          <p className="text-[10px] text-blue-700">Vence: {state.data.ceeGva.exactMatch.validohasta}</p>
+                                          <p className="text-[11px] font-bold text-blue-900 mb-1">
+                                            Vence: {state.data.ceeGva.exactMatch.validohasta}
+                                          </p>
                                           {state.data.ceeGva.exactMatch.url && (
-                                            <a href={state.data.ceeGva.exactMatch.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-primary hover:underline mt-1 block">
-                                              Descargar PDF <ExternalLink className="inline h-2 w-2" />
+                                            <a href={state.data.ceeGva.exactMatch.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:underline flex items-center justify-end gap-1">
+                                              Descargar PDF <ExternalLink className="h-3 w-3" />
                                             </a>
                                           )}
                                         </div>
                                       </div>
                                     </div>
                                   ) : (
-                                    <p className="text-xs text-muted-foreground italic">No hay un certificado específico para este inmueble concreto.</p>
+                                    <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay un certificado específico para este inmueble concreto.</p>
                                   )}
 
-                                  {state.data.ceeGva.others.length > 0 && (
-                                    <Accordion type="single" collapsible className="w-full">
-                                      <AccordionItem value="others" className="border-none">
-                                        <AccordionTrigger className="text-xs font-bold py-2 px-4 bg-white rounded-md border border-green-200 hover:no-underline">
-                                          Otros certificados del edificio ({state.data.ceeGva.others.length})
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                            {state.data.ceeGva.others.map((item, idx) => (
-                                              <div key={idx} className="flex items-center justify-between p-2 rounded border border-border bg-white text-[11px]">
-                                                <div className="flex items-center gap-3">
-                                                  <LetraBadge letra={item.emicalif} size="sm" />
-                                                  <div className="font-mono text-muted-foreground">{item.ref}</div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                  <span className="text-muted-foreground">Vence: {item.validohasta}</span>
-                                                  {item.url && (
-                                                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary p-1">
-                                                      <ExternalLink className="h-3 w-3" />
-                                                    </a>
-                                                  )}
-                                                </div>
+                                  {state.data.ceeGva.others && state.data.ceeGva.others.length > 0 && (
+                                    <div className="space-y-2">
+                                      <p className="text-[11px] font-bold text-green-800 uppercase pl-1">Otros certificados registrados en el edificio ({state.data.ceeGva.others.length})</p>
+                                      <div className="max-h-[300px] overflow-y-auto pr-2 space-y-2 border rounded-md p-2 bg-white/50">
+                                        {state.data.ceeGva.others.map((item, idx) => (
+                                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg border border-border bg-white shadow-sm transition-hover hover:border-green-300">
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex flex-col gap-1 items-center">
+                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">Emi</span>
+                                                <LetraBadge letra={item.emicalif} size="sm" />
                                               </div>
-                                            ))}
+                                              <div className="flex flex-col gap-1 items-center border-l pl-2">
+                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">Con</span>
+                                                <LetraBadge letra={item.concalif} size="sm" />
+                                              </div>
+                                              <div className="flex flex-col ml-1">
+                                                <span className="text-[10px] font-mono font-bold text-primary">{item.ref}</span>
+                                                <span className="text-[9px] text-muted-foreground">Vence: {item.validohasta}</span>
+                                              </div>
+                                            </div>
+                                            {item.url && (
+                                              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                <a href={item.url} target="_blank" rel="noopener noreferrer">
+                                                  <ExternalLink className="h-4 w-4" />
+                                                </a>
+                                              </Button>
+                                            )}
                                           </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    </Accordion>
+                                        ))}
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               ) : (
@@ -504,80 +586,6 @@ export default function CatastroSearch() {
                         </CardContent>
                       </Card>
                     )}
-
-                    {/* 4. Zona Climática */}
-                    <Card className="border-primary/20 bg-primary/5">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl">
-                                <Thermometer className="text-primary h-6 w-6"/>
-                                <span>Zona Climática (DB-HE)</span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-md">
-                                            <span className="text-2xl font-bold">{state.data.climaticZone || 'N/D'}</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold uppercase text-muted-foreground">Zona General CTE</p>
-                                            <p className="text-xs text-muted-foreground italic">{state.data.climaticZoneRule}</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Provincia de cálculo</p>
-                                        <p className="text-sm font-bold">{state.data.province}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Altitud aplicada</p>
-                                        <p className="text-sm font-bold">{state.data.altitude.toFixed(0)} m</p>
-                                    </div>
-                                </div>
-
-                                {state.data.alternativeClimaticZone && (
-                                    <div className="bg-background/60 p-4 rounded-lg border-2 border-primary/30 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-2">
-                                            <Info className="h-4 w-4 text-primary opacity-50" />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground font-black text-xl shadow-inner">
-                                                    {state.data.alternativeClimaticZone}
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-primary uppercase leading-tight">Zona Alternativa</p>
-                                                    <p className="text-[10px] text-muted-foreground uppercase font-medium">Doc. Reconocido CTE</p>
-                                                </div>
-                                            </div>
-                                            <Separator className="bg-primary/10" />
-                                            <div>
-                                                <p className="text-[10px] font-medium text-muted-foreground uppercase">Municipio aplicado:</p>
-                                                <p className="text-sm font-bold text-foreground">{state.data.alternativeClimaticZoneMunicipality}</p>
-                                            </div>
-                                            {state.data.alternativeClimaticZoneReference && (
-                                                <div className="pt-2">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <FileText className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Registro CTE:</span>
-                                                        <span className="text-[11px] font-mono font-bold text-primary">{state.data.alternativeClimaticZoneReference}</span>
-                                                    </div>
-                                                    <a 
-                                                        href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium"
-                                                    >
-                                                        Ver Documentos Reconocidos <ExternalLink className="h-2 w-2" />
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
 
                     {/* 5. Otros Registros Regionales */}
                     {state.data.ceeRegistry && (
