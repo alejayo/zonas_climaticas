@@ -15,6 +15,7 @@ const FormSchema = z.object({
 const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
 const CATASTRO_DATA_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
+const CARTOCIUDAD_API_URL = 'https://www.cartociudad.es/geocoder/api/geocoder/reverseGeocode';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
   const regex = new RegExp(`<${tag}>(.*?)</${tag}>`);
@@ -55,10 +56,6 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     ]);
 
     if (!coordsResponse.ok || !dataResponse.ok) {
-      console.error('Catastro service response not OK', { 
-          coordsStatus: coordsResponse.status, 
-          dataStatus: dataResponse.status 
-      });
       return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
     }
 
@@ -68,12 +65,10 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     ]);
     
     if (coordsXml.includes('<err>')) {
-        const errorMessage = getErrorDescription(coordsXml);
-        return { data: null, error: `Error del Catastro (coordenadas): ${errorMessage}` };
+        return { data: null, error: `Error del Catastro: ${getErrorDescription(coordsXml)}` };
     }
     if (dataXml.includes('<err>')) {
-        const errorMessage = getErrorDescription(dataXml);
-        return { data: null, error: `Error del Catastro (dirección): ${errorMessage}` };
+        return { data: null, error: `Error del Catastro: ${getErrorDescription(dataXml)}` };
     }
 
     const longitudeStr = parseXmlTag(coordsXml, 'xcen');
@@ -88,24 +83,31 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     const municipalityCode = parseXmlTag(dataXml, 'cm');
 
     if (!address || !longitudeStr || !latitudeStr) {
-      return { data: null, error: "No se encontraron datos completos para la referencia catastral proporcionada." };
+      return { data: null, error: "No se encontraron datos completos para la referencia catastral." };
     }
     
     const latitude = parseFloat(latitudeStr);
     const longitude = parseFloat(longitudeStr);
 
-    if (isNaN(latitude) || isNaN(longitude)) {
-        return { data: null, error: "Las coordenadas recibidas del Catastro no son válidas." };
-    }
+    const [elevationRes, ignRes] = await Promise.all([
+      fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
+      fetch(`${CARTOCIUDAD_API_URL}?lon=${longitude}&lat=${latitude}`)
+    ]);
 
-    const elevationResponse = await fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`);
-
-    if (!elevationResponse.ok) {
-        console.warn("Could not fetch elevation data.");
-    }
-    
-    const elevationData = elevationResponse.ok ? await elevationResponse.json() : { elevation: [0] };
+    const elevationData = elevationRes.ok ? await elevationRes.json() : { elevation: [0] };
     const altitude = elevationData.elevation?.[0] ?? 0;
+
+    let ignAddress = null;
+    if (ignRes.ok) {
+      const ignData = await ignRes.json();
+      const parts = [];
+      if (ignData.tip_via && ignData.address) parts.push(`${ignData.tip_via} ${ignData.address}`);
+      else if (ignData.address) parts.push(ignData.address);
+      if (ignData.portalNumber) parts.push(ignData.portalNumber);
+      if (ignData.muni) parts.push(ignData.muni);
+      if (ignData.province) parts.push(ignData.province);
+      ignAddress = parts.join(', ');
+    }
 
     const provinceIneCode = province ? getIneCode(province) : null;
     const municipalityIneCode = provinceCode && municipalityCode ? `${provinceCode}${municipalityCode}` : null;
@@ -122,6 +124,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         latitude,
         longitude,
         altitude,
+        ignAddress,
         climaticZone: climaticZoneInfo?.zone,
         climaticZoneRule: climaticZoneInfo?.rule,
     };
@@ -129,7 +132,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     return { data: result, error: null };
 
   } catch (e: any) {
-    console.error("An unexpected error occurred during the search:", e);
-    return { data: null, error: `Ocurrió un error inesperado al contactar servicios externos.` };
+    console.error(e);
+    return { data: null, error: `Error inesperado al contactar servicios externos.` };
   }
 }

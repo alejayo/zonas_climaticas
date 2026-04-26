@@ -9,6 +9,7 @@ export type CatastroData = {
   latitude: number;
   longitude: number;
   altitude: number;
+  ignAddress?: string | null;
   climaticZone?: string | null;
   climaticZoneRule?: string | null;
 };

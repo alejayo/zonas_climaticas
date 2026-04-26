@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
@@ -16,7 +15,7 @@ const initialState: ActionState = { data: null, error: null };
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending} className="w-[130px] transition-all" variant="default">
+        <Button type="submit" disabled={pending} className="w-[130px]" variant="default">
             {pending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
@@ -33,9 +32,9 @@ function Results({ state }: { state: ActionState }) {
 
     if (pending) {
         return (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-12 text-center">
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="mt-4 text-lg text-muted-foreground">Buscando datos...</p>
+                <p className="mt-4 text-lg text-muted-foreground">Obteniendo localización y datos...</p>
             </div>
         );
     }
@@ -53,86 +52,106 @@ function Results({ state }: { state: ActionState }) {
     if (!state.data) {
         return (
             <div className="text-center text-muted-foreground p-12 border-2 border-dashed rounded-lg">
-                <p className="text-lg">Los resultados de la búsqueda aparecerán aquí.</p>
+                <p className="text-lg">Introduce una referencia catastral para comenzar.</p>
             </div>
         );
     }
 
-    const { address, municipality, province, postalCode, constructionYear, ineCode, municipalityIneCode, latitude, longitude, altitude, climaticZone, climaticZoneRule } = state.data;
+    const { address, municipality, province, postalCode, constructionYear, ineCode, municipalityIneCode, latitude, longitude, altitude, ignAddress, climaticZone, climaticZoneRule } = state.data;
     
-    const catastroItems = [
-        { icon: MapPin, label: "Dirección", value: address },
-        { icon: Home, label: "Municipio", value: municipality ? `${municipality} (INE: ${municipalityIneCode || 'N/A'})` : null },
-        { icon: Building, label: "Provincia", value: province ? `${province} (INE: ${ineCode || 'N/A'})` : null },
-        { icon: MapPin, label: "Código Postal", value: postalCode },
-        { icon: Calendar, label: "Año Construcción", value: constructionYear },
-    ];
-
-    const geoItems = [
-        { icon: Globe, label: "Latitud", value: latitude.toFixed(6) },
-        { icon: Globe, label: "Longitud", value: longitude.toFixed(6) },
-        { icon: Mountain, label: "Altitud", value: `${altitude.toFixed(2)} m` },
-    ];
-
     return (
-        <div className="space-y-4 animate-in fade-in-50 duration-500">
+        <div className="space-y-6 animate-in fade-in-50 duration-500">
+            {/* 1. Datos de Localización */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Building className="text-primary"/>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <MapPin className="text-primary h-6 w-6"/>
+                        <span>Localización</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex flex-col items-center p-3 rounded-lg bg-secondary/30">
+                            <Globe className="h-5 w-5 text-muted-foreground mb-1" />
+                            <span className="text-xs font-medium text-muted-foreground uppercase">Latitud</span>
+                            <span className="text-lg font-semibold">{latitude.toFixed(6)}</span>
+                        </div>
+                        <div className="flex flex-col items-center p-3 rounded-lg bg-secondary/30">
+                            <Globe className="h-5 w-5 text-muted-foreground mb-1" />
+                            <span className="text-xs font-medium text-muted-foreground uppercase">Longitud</span>
+                            <span className="text-lg font-semibold">{longitude.toFixed(6)}</span>
+                        </div>
+                        <div className="flex flex-col items-center p-3 rounded-lg bg-secondary/30">
+                            <Mountain className="h-5 w-5 text-muted-foreground mb-1" />
+                            <span className="text-xs font-medium text-muted-foreground uppercase">Altitud</span>
+                            <span className="text-lg font-semibold">{altitude.toFixed(0)} m</span>
+                        </div>
+                    </div>
+                    {ignAddress && (
+                        <div className="pt-2 border-t">
+                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Dirección según Cartociudad (IGN)</p>
+                            <p className="text-base font-medium">{ignAddress}</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* 2. Zona Climática */}
+            {climaticZone && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Thermometer className="text-primary h-6 w-6"/>
+                            <span>Zona Climática (DB-HE)</span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center gap-6">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg">
+                            <span className="text-4xl font-bold">{climaticZone}</span>
+                        </div>
+                        <div>
+                            <p className="text-lg font-medium text-foreground">
+                                La zona climática según el CTE es <span className="font-bold">{climaticZone}</span>.
+                            </p>
+                            {climaticZoneRule && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Criterio: {climaticZoneRule}
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* 3. Datos del Catastro */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Building className="text-primary h-6 w-6"/>
                         <span>Datos del Catastro</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                    {catastroItems.map((item, index) => (
-                        item.value && (
-                            <div key={index} className="flex items-start gap-3">
-                                <item.icon className="h-5 w-5 text-muted-foreground mt-1" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
-                                    <p className="text-base text-foreground">{item.value}</p>
-                                </div>
-                            </div>
-                        )
-                    ))}
-                </CardContent>
-            </Card>
-
-            {climaticZone && (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Thermometer className="text-primary"/>
-                        <span>Zona Climática (DB-HE)</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center gap-4">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <span className="text-4xl font-bold">{climaticZone}</span>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Dirección (Catastro)</p>
+                        <p className="text-base">{address}</p>
                     </div>
-                    <div className="flex-1">
-                        <p className="text-base text-foreground">La zona climática según el CTE DB-HE es <strong>{climaticZone}</strong>.</p>
-                        {climaticZoneRule && <p className="text-sm text-muted-foreground">Regla: {climaticZoneRule} a {altitude.toFixed(0)}m de altitud.</p>}
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Municipio</p>
+                        <p className="text-base">{municipality} {municipalityIneCode && <span className="text-xs text-muted-foreground font-mono">(INE: {municipalityIneCode})</span>}</p>
                     </div>
-                </CardContent>
-            </Card>
-            )}
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Globe className="text-primary"/>
-                        <span>Datos Geográficos</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    {geoItems.map((item, index) =>(
-                        <div key={index} className="flex flex-col items-center space-y-1 rounded-lg bg-secondary/50 p-4">
-                            <item.icon className="h-6 w-6 text-muted-foreground" />
-                            <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
-                            <p className="text-lg font-semibold text-foreground">{item.value}</p>
-                        </div>
-                    ))}
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Provincia</p>
+                        <p className="text-base">{province} {ineCode && <span className="text-xs text-muted-foreground font-mono">(INE: {ineCode})</span>}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Código Postal</p>
+                        <p className="text-base">{postalCode || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Año de Construcción</p>
+                        <p className="text-base">{constructionYear || 'No disponible'}</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -145,16 +164,14 @@ export default function CatastroSearch() {
     return (
         <div className="w-full">
             <form action={formAction} className="space-y-6">
-                <div className="flex w-full flex-col sm:flex-row items-start gap-2">
+                <div className="flex w-full flex-col sm:flex-row items-stretch gap-2">
                     <Input 
                         name="ref" 
-                        placeholder="Introduce la referencia catastral de 20 dígitos" 
+                        placeholder="Introduce la referencia catastral (20 caracteres)" 
                         required 
-                        className="flex-grow text-base" 
+                        className="flex-grow text-lg h-12" 
                         minLength={14}
                         maxLength={20}
-                        aria-label="Referencia Catastral"
-                        autoComplete="off"
                     />
                     <SubmitButton />
                 </div>
