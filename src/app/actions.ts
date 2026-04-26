@@ -12,23 +12,21 @@ const FormSchema = z.object({
     .regex(/^[A-Z0-9]+$/, "La referencia catastral solo puede contener letras mayúsculas y números."),
 });
 
-const CATASTRO_ADDRESS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCWcfLib/OVCWcf.svc/rest/Consulta_DNPLOC';
-const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCCoordenadas.svc/rest/Consulta_CPMRC';
+// Endpoints correctos basados en el ejemplo funcional del usuario
+const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
+const CATASTRO_DATA_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 
-const parseXml = <T>(xml: string, tag: string): T | null => {
-  const match = xml.match(new RegExp(`<${tag}>(.*?)</${tag}>`));
-  // For tags with attributes like <pc1 xsi:nil="true"/>
-  if (match && match[1] === '') {
-      const selfClosingMatch = xml.match(new RegExp(`<${tag}[^>]*?/>`));
-      if (selfClosingMatch) return null;
-  }
-  return match ? (match[1] as T) : null;
+const parseXmlTag = (xml: string, tag: string): string | null => {
+  // Coincidencia no codiciosa para el contenido dentro de una etiqueta
+  const regex = new RegExp(`<${tag}>(.*?)</${tag}>`);
+  const match = xml.match(regex);
+  return match ? match[1] : null;
 };
 
-const getErrorDescription = (xml: string): string | null => {
-  const errorMatch = xml.match(/<des>(.*?)<\/des>/);
-  return errorMatch ? errorMatch[1] : "Error desconocido al contactar el servicio del Catastro.";
+const getErrorDescription = (xml: string): string => {
+    const errorMatch = xml.match(/<des>(.*?)<\/des>/);
+    return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
 
 export async function searchCatastro(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -41,46 +39,47 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
   const ref = validatedFields.data.ref;
 
   try {
+    // Es necesario simular una petición de navegador
     const fetchOptions = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Referer': 'https://www.sedecatastro.gob.es/'
         }
     };
-    
-    const [addressResponse, coordsResponse] = await Promise.all([
-      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`, fetchOptions),
-      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`, fetchOptions)
+
+    const coordsUrl = `${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
+    const dataUrl = `${CATASTRO_DATA_URL}?RC=${ref}`;
+
+    // Realizar ambas peticiones en paralelo para mayor eficiencia
+    const [coordsResponse, dataResponse] = await Promise.all([
+      fetch(coordsUrl, fetchOptions),
+      fetch(dataUrl, fetchOptions)
     ]);
 
-    if (!addressResponse.ok || !coordsResponse.ok) {
-      if (!addressResponse.ok) {
-        console.error(`Catastro address service failed with status: ${addressResponse.status}`);
-      }
-      if (!coordsResponse.ok) {
-        console.error(`Catastro coordinates service failed with status: ${coordsResponse.status}`);
-      }
-      return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
+    if (!coordsResponse.ok) {
+        return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
+    }
+     if (!dataResponse.ok) {
+        return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
     }
 
-    const [addressXml, coordsXml] = await Promise.all([
-      addressResponse.text(),
-      coordsResponse.text(),
-    ]);
 
+    const [coordsXml, dataXml] = await Promise.all([
+        coordsResponse.text(),
+        dataResponse.text(),
+    ]);
+    
     if (coordsXml.includes('<err>')) {
         const errorMessage = getErrorDescription(coordsXml);
         return { data: null, error: `Error del Catastro (coordenadas): ${errorMessage}` };
     }
-    
-    if (addressXml.includes('<err>')) {
-        const errorMessage = getErrorDescription(addressXml);
+    if (dataXml.includes('<err>')) {
+        const errorMessage = getErrorDescription(dataXml);
         return { data: null, error: `Error del Catastro (dirección): ${errorMessage}` };
     }
 
-    const address = parseXml<string>(addressXml, 'ldt');
-    const longitudeStr = parseXml<string>(coordsXml, 'pc1');
-    const latitudeStr = parseXml<string>(coordsXml, 'pc2');
+    const longitudeStr = parseXmlTag(coordsXml, 'xcen');
+    const latitudeStr = parseXmlTag(coordsXml, 'ycen');
+    const address = parseXmlTag(dataXml, 'ldt');
 
     if (!address || !longitudeStr || !latitudeStr) {
       return { data: null, error: "No se encontraron datos completos para la referencia catastral proporcionada." };
@@ -118,6 +117,9 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
   } catch (e: any) {
     console.error("An unexpected error occurred during the search:", e);
-    return { data: null, error: `Ocurrió un error inesperado: ${e.message}. Por favor, revise la consola para más detalles.` };
+    if (e.message.includes('fetch')) {
+         return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
+    }
+    return { data: null, error: `Ocurrió un error inesperado: ${e.message}.` };
   }
 }
