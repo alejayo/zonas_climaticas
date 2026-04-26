@@ -67,8 +67,12 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
             });
 
             leafletMap.current = L.map(mapRef.current).setView([40.416775, -3.70379], 6);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
+            
+            // Capa de mapa más limpia y profesional (estilo Google Maps sin comercios)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
             }).addTo(leafletMap.current);
 
             leafletMap.current.on('click', (e: any) => {
@@ -81,6 +85,7 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
 
         if (leafletMap.current && currentPos) {
             const currentZoom = leafletMap.current.getZoom();
+            // Mantener el nivel de zoom actual si el usuario ya ha ampliado
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             
             leafletMap.current.setView(currentPos, targetZoom);
