@@ -11,10 +11,10 @@ export default async function Home(props: { searchParams: Promise<{ embed?: stri
         {!isEmbed && (
           <header className="text-center">
             <h1 className="text-4xl font-bold text-primary font-headline tracking-tight lg:text-5xl">
-              GeoCatastro España
+              Consultor Técnico de Edificación
             </h1>
             <p className="text-muted-foreground mt-2 text-lg">
-              Introduce una referencia catastral para obtener su información geográfica y un análisis contextual por IA.
+              Análisis geográfico integral, zonas climáticas CTE y acceso directo a registros oficiales de eficiencia energética (IEE/CEE).
             </p>
           </header>
         )}
