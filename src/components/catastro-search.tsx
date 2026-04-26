@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -464,8 +463,27 @@ export default function CatastroSearch() {
                                       <Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}
                                     </p>
                                   </div>
+                                  
+                                  {/* Emisiones y Consumo IEE */}
+                                  {(state.data.ieeGva.emisiones || state.data.ieeGva.consumo) && (
+                                    <div className="col-span-full pt-2 border-t flex flex-wrap gap-x-6 gap-y-2">
+                                      {state.data.ieeGva.emisiones && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones IEE:</span>
+                                          <LetraBadge letra={state.data.ieeGva.emisiones} size="sm" />
+                                        </div>
+                                      )}
+                                      {state.data.ieeGva.consumo && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo IEE:</span>
+                                          <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
                                   {(state.data.ieeGva.count_intu! > 0 || state.data.ieeGva.count_intm! > 0) && (
-                                    <div className="col-span-full pt-2 border-t mt-2">
+                                    <div className="col-span-full pt-2 border-t mt-1">
                                       <div className="flex flex-col gap-1">
                                         {state.data.ieeGva.count_intu! > 0 && (
                                           <p className="text-xs text-red-600 font-bold flex items-center gap-1">
