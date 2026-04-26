@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import type { ActionState, CatastroData } from '@/lib/types';
 import { geographicContextDescription } from '@/ai/flows/geographic-context-description';
+import { getIneCode } from '@/lib/provinces';
 
 const FormSchema = z.object({
   ref: z.string({invalid_type_error: "La referencia catastral debe ser un texto."})
@@ -21,7 +22,11 @@ const parseXmlTag = (xml: string, tag: string): string | null => {
   // Coincidencia no codiciosa para el contenido dentro de una etiqueta
   const regex = new RegExp(`<${tag}>(.*?)</${tag}>`);
   const match = xml.match(regex);
-  return match ? match[1] : null;
+  if (match && match[1]) {
+      // Decode XML entities like &lt; &gt; &amp;
+      return match[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  }
+  return null;
 };
 
 const getErrorDescription = (xml: string): string => {
@@ -45,6 +50,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         }
     };
     
+    // Ensure the URL parameters are correctly formatted, including empty ones.
     const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
     const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${ref}`;
 
@@ -76,9 +82,15 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         return { data: null, error: `Error del Catastro (dirección): ${errorMessage}` };
     }
 
+    // Parse all required fields
     const longitudeStr = parseXmlTag(coordsXml, 'xcen');
     const latitudeStr = parseXmlTag(coordsXml, 'ycen');
+    
     const address = parseXmlTag(dataXml, 'ldt');
+    const municipality = parseXmlTag(dataXml, 'nm');
+    const province = parseXmlTag(dataXml, 'np');
+    const postalCode = parseXmlTag(dataXml, 'dp');
+    const constructionYear = parseXmlTag(dataXml, 'ant');
 
     if (!address || !longitudeStr || !latitudeStr) {
       return { data: null, error: "No se encontraron datos completos para la referencia catastral proporcionada." };
@@ -104,8 +116,16 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     const altitude = elevationData.elevation?.[0] ?? 0;
     const aiDescription = aiDescriptionResponse.description;
 
+    // Get INE Code
+    const ineCode = province ? getIneCode(province) : null;
+
     const result: CatastroData = {
         address,
+        municipality,
+        province,
+        postalCode,
+        constructionYear,
+        ineCode,
         latitude,
         longitude,
         altitude,

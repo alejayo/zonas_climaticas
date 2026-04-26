@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Search, MapPin, Globe, Mountain, Sparkles, AlertTriangle } from 'lucide-react';
+import { Loader2, Search, MapPin, Globe, Mountain, Sparkles, AlertTriangle, Building, Home, Calendar } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 const initialState: ActionState = { data: null, error: null };
@@ -58,10 +58,16 @@ function Results({ state }: { state: ActionState }) {
         );
     }
 
-    const { address, latitude, longitude, altitude, aiDescription } = state.data;
-    const dataItems = [
+    const { address, municipality, province, postalCode, constructionYear, ineCode, latitude, longitude, altitude, aiDescription } = state.data;
+    
+    const catastroItems = [
         { icon: MapPin, label: "Dirección", value: address },
+        { icon: Home, label: "Municipio", value: municipality },
+        { icon: Building, label: "Provincia", value: province ? `${province} (INE: ${ineCode || 'N/A'})` : null },
+        { icon: MapPin, label: "Código Postal", value: postalCode },
+        { icon: Calendar, label: "Año Construcción", value: constructionYear },
     ];
+
     const geoItems = [
         { icon: Globe, label: "Latitud", value: latitude.toFixed(6) },
         { icon: Globe, label: "Longitud", value: longitude.toFixed(6) },
@@ -73,12 +79,22 @@ function Results({ state }: { state: ActionState }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <MapPin className="text-primary"/>
-                        <span>Ubicación</span>
+                        <Building className="text-primary"/>
+                        <span>Datos del Catastro</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-lg">{address}</p>
+                <CardContent className="space-y-3">
+                    {catastroItems.map((item, index) => (
+                        item.value && (
+                            <div key={index} className="flex items-start gap-3">
+                                <item.icon className="h-5 w-5 text-muted-foreground mt-1" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
+                                    <p className="text-base text-foreground">{item.value}</p>
+                                </div>
+                            </div>
+                        )
+                    ))}
                 </CardContent>
             </Card>
 
