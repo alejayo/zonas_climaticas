@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
     Loader2, Search, MapPin, Globe, Mountain, 
     AlertTriangle, Building, Thermometer, Map as MapIcon, 
-    Navigation, CheckCircle2, ExternalLink, Info, FileText,
+    Navigation, ExternalLink, Info, FileText,
     Zap, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Separator } from './ui/separator';
@@ -80,9 +80,9 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
         }
 
         if (leafletMap.current && currentPos) {
-            const L = require('leaflet');
             leafletMap.current.setView(currentPos, 16);
             if (marker.current) marker.current.remove();
+            const L = require('leaflet');
             marker.current = L.marker(currentPos).addTo(leafletMap.current);
         }
     }, [currentPos, onLocationSelect]);
@@ -252,7 +252,7 @@ export default function CatastroSearch() {
 
             {state.data && !isSearching && (
                 <div className="space-y-6 animate-in fade-in-50 duration-500">
-                    <Card className="border-accent/20">
+                    <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-xl">
                                 <MapPin className="text-primary h-6 w-6"/>
@@ -261,17 +261,17 @@ export default function CatastroSearch() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border border-border/50">
+                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border">
                                     <Globe className="h-5 w-5 text-muted-foreground mb-1" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">Latitud</span>
                                     <span className="text-lg font-semibold">{state.data.latitude.toFixed(6)}</span>
                                 </div>
-                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border border-border/50">
+                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border">
                                     <Globe className="h-5 w-5 text-muted-foreground mb-1" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">Longitud</span>
                                     <span className="text-lg font-semibold">{state.data.longitude.toFixed(6)}</span>
                                 </div>
-                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border border-border/50">
+                                <div className="flex flex-col items-center p-4 rounded-lg bg-secondary/30 border">
                                     <Mountain className="h-5 w-5 text-muted-foreground mb-1" />
                                     <span className="text-xs font-medium text-muted-foreground uppercase">Altitud</span>
                                     <span className="text-lg font-semibold">{state.data.altitude.toFixed(0)} m</span>
@@ -279,15 +279,8 @@ export default function CatastroSearch() {
                             </div>
                             {state.data.ignAddress && (
                                 <div className="pt-4 border-t">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1 p-2 rounded-full bg-primary/10">
-                                            <Navigation className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Dirección Oficial (Cartociudad IGN)</p>
-                                            <p className="text-lg font-medium leading-tight">{state.data.ignAddress}</p>
-                                        </div>
-                                    </div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Dirección Oficial (Cartociudad IGN)</p>
+                                    <p className="text-lg font-medium">{state.data.ignAddress}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -305,7 +298,7 @@ export default function CatastroSearch() {
                                 <p className="text-xs font-medium text-muted-foreground uppercase">Referencia Catastral</p>
                                 <div className="flex items-center gap-2">
                                     <p className="text-lg font-mono font-bold text-primary">{state.data.ref}</p>
-                                    <a href={getCatastroLink(state.data.ref)} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                                    <a href={getCatastroLink(state.data.ref)} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
                                         <ExternalLink className="h-4 w-4" />
                                     </a>
                                 </div>
@@ -356,20 +349,13 @@ export default function CatastroSearch() {
                                         <p className="text-xs font-medium text-muted-foreground uppercase">Provincia de cálculo</p>
                                         <p className="text-sm font-bold">{state.data.province}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Altitud aplicada</p>
-                                        <p className="text-sm font-bold">{state.data.altitude.toFixed(0)} m</p>
-                                    </div>
                                 </div>
 
                                 {state.data.alternativeClimaticZone && (
-                                    <div className="bg-background/60 p-4 rounded-lg border-2 border-primary/30 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-2">
-                                            <Info className="h-4 w-4 text-primary opacity-50" />
-                                        </div>
+                                    <div className="bg-background/60 p-4 rounded-lg border-2 border-primary/30 relative">
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground font-black text-xl shadow-inner">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent text-accent-foreground font-black text-xl">
                                                     {state.data.alternativeClimaticZone}
                                                 </div>
                                                 <div>
@@ -380,17 +366,13 @@ export default function CatastroSearch() {
                                             <Separator className="bg-primary/10" />
                                             <div>
                                                 <p className="text-[10px] font-medium text-muted-foreground uppercase">Municipio aplicado:</p>
-                                                <p className="text-sm font-bold text-foreground">{state.data.alternativeClimaticZoneMunicipality}</p>
+                                                <p className="text-sm font-bold">{state.data.alternativeClimaticZoneMunicipality}</p>
                                             </div>
                                             {state.data.alternativeClimaticZoneReference && (
                                                 <div className="pt-2">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <FileText className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Registro CTE:</span>
-                                                        <span className="text-[11px] font-mono font-bold text-primary">{state.data.alternativeClimaticZoneReference}</span>
-                                                    </div>
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Registro: <span className="text-primary">{state.data.alternativeClimaticZoneReference}</span></p>
                                                     <a href="https://www.codigotecnico.org/RegistroCTE/DocumentosReconocidos.html" target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-1 font-medium">
-                                                        Ver Documentos Reconocidos <ExternalLink className="h-2 w-2" />
+                                                        Ver Registro CTE <ExternalLink className="h-2 w-2" />
                                                     </a>
                                                 </div>
                                             )}
@@ -426,25 +408,21 @@ export default function CatastroSearch() {
                                     <p className="text-sm font-medium flex items-center gap-1"><Calendar className="h-3 w-3" /> Hasta: {state.data.ieeGva.caducidad}</p>
                                   </div>
                                   <div className="col-span-full pt-2 border-t space-y-3">
-                                    <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                    <div className="flex flex-wrap items-center gap-4">
                                       {state.data.ieeGva.emisiones && (
                                         <div className="flex items-center gap-2">
-                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones IEE:</span>
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Emisiones:</span>
                                           <LetraBadge letra={state.data.ieeGva.emisiones} size="sm" />
                                         </div>
                                       )}
                                       {state.data.ieeGva.consumo && (
                                         <div className="flex items-center gap-2">
-                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo IEE:</span>
+                                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Consumo:</span>
                                           <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
                                         </div>
                                       )}
-                                      {(state.data.ieeGva.count_intu! > 0 || state.data.ieeGva.count_intm! > 0) && (
-                                        <div className="flex items-center gap-4">
-                                          {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
-                                          {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
-                                        </div>
-                                      )}
+                                      {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold">{state.data.ieeGva.count_intu} intervenciones urgentes</span>}
+                                      {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold">{state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
                                     </div>
                                   </div>
                                   {state.data.ieeGva.urlgesie && (

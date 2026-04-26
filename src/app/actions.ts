@@ -108,42 +108,6 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
   }
 }
 
-const getCEERegistry = (province: string | null): CatastroData['ceeRegistry'] => {
-  if (!province) return null;
-  const p = province.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  
-  const registries: Record<string, CatastroData['ceeRegistry']> = {
-    'VALENCIA': {
-      name: 'IVACE Energía (C. Valenciana)',
-      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
-      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
-      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
-    },
-    'ALICANTE': {
-      name: 'IVACE Energía (C. Valenciana)',
-      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
-      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
-      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
-    },
-    'CASTELLON': {
-      name: 'IVACE Energía (C. Valenciana)',
-      url: 'https://cee.ivace.es/cee/publico/consultar-certificados.jsf',
-      visorUrl: 'https://visor.gva.es/visor/?capasids=26_GCEE;&nodoDesplegado=26_GCEE',
-      description: 'Consulta pública de certificados energéticos de la Comunidad Valenciana.'
-    }
-  };
-
-  for (const key in registries) {
-    if (p.includes(key)) return registries[key];
-  }
-
-  return {
-    name: 'Registro Regional CEE',
-    url: 'https://www.codigotecnico.org/RegistroCTE/RegistrosCCAA.html',
-    description: 'Accede al listado oficial de registros por Comunidad Autónoma.'
-  };
-};
-
 async function getFullData(displayRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
     const fetchOptions = {
         headers: {
@@ -261,7 +225,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         alternativeClimaticZone: alternativeZoneInfo?.zone,
         alternativeClimaticZoneMunicipality: alternativeZoneInfo?.municipality,
         alternativeClimaticZoneReference: alternativeZoneInfo?.reference,
-        ceeRegistry: getCEERegistry(province),
         ieeGva,
         ceeGva
     };
