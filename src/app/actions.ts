@@ -23,31 +23,51 @@ const getErrorDescription = (xml: string): string => {
     return errorMatch ? errorMatch[1] : "Error desconocido al procesar la respuesta del Catastro.";
 };
 
-async function getFullData(displayRef: string, searchRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
+async function getFullData(displayRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
     const fetchOptions = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         }
     };
 
-    // Usamos searchRef (que puede ser de 20) para obtener datos específicos de construcción
-    const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${searchRef}`;
-    const [dataResponse, elevationRes, ignRes] = await Promise.all([
-        fetch(dataUrl, fetchOptions),
+    // 1. Obtener datos de la referencia madre (14 caracteres)
+    const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${displayRef.substring(0, 14)}`;
+    const [motherDataRes, elevationRes, ignRes] = await Promise.all([
+        fetch(motherDataUrl, fetchOptions),
         fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
         fetch(`${CARTOCIUDAD_API_URL}?lon=${longitude}&lat=${latitude}`)
     ]);
 
-    if (!dataResponse.ok) return "No se pudo contactar con el Catastro.";
-    const dataXml = await dataResponse.text();
+    if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
+    const motherDataXml = await motherDataRes.text();
     
-    const address = parseXmlTag(dataXml, 'ldt');
-    const municipality = parseXmlTag(dataXml, 'nm');
-    const province = parseXmlTag(dataXml, 'np');
-    const postalCode = parseXmlTag(dataXml, 'dp');
-    const constructionYear = parseXmlTag(dataXml, 'ant');
-    const provinceCode = parseXmlTag(dataXml, 'cp');
-    const municipalityCode = parseXmlTag(dataXml, 'cm');
+    const address = parseXmlTag(motherDataXml, 'ldt');
+    const municipality = parseXmlTag(motherDataXml, 'nm');
+    const province = parseXmlTag(motherDataXml, 'np');
+    const postalCode = parseXmlTag(motherDataXml, 'dp');
+    let constructionYear = parseXmlTag(motherDataXml, 'ant');
+    const provinceCode = parseXmlTag(motherDataXml, 'cp');
+    const municipalityCode = parseXmlTag(motherDataXml, 'cm');
+
+    // 2. Si no hay año de construcción (común en referencias de 14), buscamos una de 20 para obtenerlo
+    if (!constructionYear) {
+        const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
+        const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
+        if (rcCoordsRes.ok) {
+            const rcCoordsXml = await rcCoordsRes.text();
+            const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
+            const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
+            if (pc1 && pc2) {
+                const childRef = pc1 + pc2;
+                const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef}`;
+                const childDataRes = await fetch(childDataUrl, fetchOptions);
+                if (childDataRes.ok) {
+                    const childXml = await childDataRes.text();
+                    constructionYear = parseXmlTag(childXml, 'ant');
+                }
+            }
+        }
+    }
 
     const elevationData = elevationRes.ok ? await elevationRes.json() : { elevation: [0] };
     const altitude = elevationData.elevation?.[0] ?? 0;
@@ -69,12 +89,12 @@ async function getFullData(displayRef: string, searchRef: string, latitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: displayRef, // Devolvemos la referencia "madre" (14) para mostrar
+        ref: displayRef.substring(0, 14), // Siempre mostramos la de 14
         address: address || 'No disponible',
         municipality,
         province,
         postalCode,
-        constructionYear,
+        constructionYear: constructionYear || 'No disponible',
         ineCode: provinceIneCode,
         municipalityIneCode,
         latitude,
@@ -93,7 +113,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     try {
         const motherRef = ref.substring(0, 14);
         
-        // 1. Obtener coordenadas de la referencia madre
+        // Obtener coordenadas
         const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${motherRef}`;
         const coordsResponse = await fetch(coordsUrl);
         const coordsXml = await coordsResponse.text();
@@ -105,20 +125,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
         if (!lat || !lng) return { data: null, error: "No se pudieron obtener coordenadas para esta referencia." };
 
-        // 2. Si la referencia es de 14, buscamos una de 20 para obtener datos de construcción
-        let searchRef = ref;
-        if (ref.length === 14) {
-            const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${lng}&Coordenada_Y=${lat}`;
-            const rcCoordsRes = await fetch(rcCoordsUrl);
-            const rcCoordsXml = await rcCoordsRes.text();
-            const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
-            const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
-            if (pc1 && pc2) {
-                searchRef = pc1 + pc2;
-            }
-        }
-
-        const result = await getFullData(motherRef, searchRef, lat, lng);
+        const result = await getFullData(motherRef, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {
@@ -137,10 +144,8 @@ export async function searchByCoords(lat: number, lng: number): Promise<ActionSt
         
         if (!pc1 || !pc2) return { data: null, error: "No se encontró una referencia catastral en este punto." };
         
-        const ref20 = pc1 + pc2;
-        const motherRef = ref20.substring(0, 14);
-        
-        const result = await getFullData(motherRef, ref20, lat, lng);
+        const motherRef = (pc1 + pc2).substring(0, 14);
+        const result = await getFullData(motherRef, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {
