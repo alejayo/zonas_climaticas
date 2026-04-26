@@ -35,8 +35,9 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         }
     };
 
-    // 1. Obtener datos de la referencia madre (municipio, provincia, etc.)
-    const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${displayRef.substring(0, 14)}`;
+    // 1. Obtener datos de la referencia madre para asegurar municipio/provincia
+    const motherRef = displayRef.substring(0, 14);
+    const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${motherRef}`;
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
         fetch(motherDataUrl, fetchOptions),
         fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
@@ -46,7 +47,6 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
     const motherDataXml = await motherDataRes.text();
     
-    // Datos base de la madre
     let address = parseXmlTag(motherDataXml, 'ldt');
     let constructionYear = parseXmlTag(motherDataXml, 'ant');
     const municipality = parseXmlTag(motherDataXml, 'nm');
@@ -55,7 +55,9 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const provinceCode = parseXmlTag(motherDataXml, 'cp');
     const municipalityCode = parseXmlTag(motherDataXml, 'cm');
 
-    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres) para Dirección y Año precisos
+    let finalRef = displayRef;
+
+    // 2. BUSQUEDA INTERNA DE HIJA (20 caracteres)
     const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
     const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
     if (rcCoordsRes.ok) {
@@ -63,12 +65,24 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
         const pc1 = parseXmlTag(rcCoordsXml, 'pc1');
         const pc2 = parseXmlTag(rcCoordsXml, 'pc2');
         if (pc1 && pc2) {
-            const childRef = pc1 + pc2;
-            const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef}`;
+            const childRef14 = pc1 + pc2;
+            // Consultamos la completa de 20 si es posible
+            const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef14}`;
             const childDataRes = await fetch(childDataUrl, fetchOptions);
             if (childDataRes.ok) {
                 const childXml = await childDataRes.text();
-                // Preferimos los datos de la hija para dirección y año
+                
+                // Construimos la RC de 20 caracteres completa
+                const car = parseXmlTag(childXml, 'car');
+                const cc1 = parseXmlTag(childXml, 'cc1');
+                const cc2 = parseXmlTag(childXml, 'cc2');
+                
+                if (car && cc1 && cc2) {
+                    finalRef = pc1 + pc2 + car + cc1 + cc2;
+                } else {
+                    finalRef = childRef14;
+                }
+
                 const childAddress = parseXmlTag(childXml, 'ldt');
                 const childYear = parseXmlTag(childXml, 'ant');
                 if (childAddress) address = childAddress;
@@ -97,7 +111,7 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     return {
-        ref: displayRef.substring(0, 14), // Siempre mostramos la de 14 como principal
+        ref: finalRef, // Ahora devolvemos la de 20 caracteres si se encontró
         address: address || 'No disponible',
         municipality,
         province,
@@ -131,7 +145,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
         if (!lat || !lng) return { data: null, error: "No se pudieron obtener coordenadas para esta referencia." };
 
-        const result = await getFullData(motherRef, lat, lng);
+        const result = await getFullData(ref, lat, lng);
         if (typeof result === 'string') return { data: null, error: result };
         return { data: result, error: null };
     } catch (e) {

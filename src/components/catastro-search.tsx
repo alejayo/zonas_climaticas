@@ -123,6 +123,17 @@ export default function CatastroSearch() {
         }
     };
 
+    // Función para construir el enlace a la ficha del inmueble
+    const getCatastroLink = (rc: string) => {
+        if (rc.length < 14) return '#';
+        const rc1 = rc.substring(0, 14);
+        const rc2 = rc.substring(14);
+        if (rc2) {
+            return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc.substring(0,7)}&rc2=${rc.substring(7,14)}&car=${rc.substring(14,18)}&cc1=${rc.substring(18,19)}&cc2=${rc.substring(19,20)}`;
+        }
+        return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${rc.substring(0,7)}&rc2=${rc.substring(7,14)}`;
+    };
+
     return (
         <div className="w-full space-y-8">
             <Tabs defaultValue="rc" className="w-full">
@@ -265,7 +276,7 @@ export default function CatastroSearch() {
                                 <div className="flex items-center gap-2">
                                     <p className="text-lg font-mono font-bold text-primary">{state.data.ref}</p>
                                     <a 
-                                        href={`https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${state.data.ref.substring(0,7)}&rc2=${state.data.ref.substring(7,14)}`}
+                                        href={getCatastroLink(state.data.ref)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-muted-foreground hover:text-primary transition-colors"
