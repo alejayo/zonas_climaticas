@@ -41,12 +41,25 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
   const ref = validatedFields.data.ref;
 
   try {
+    const fetchOptions = {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Referer': 'https://www.sedecatastro.gob.es/'
+        }
+    };
+    
     const [addressResponse, coordsResponse] = await Promise.all([
-      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`),
-      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`)
+      fetch(`${CATASTRO_ADDRESS_URL}?RC=${ref}`, fetchOptions),
+      fetch(`${CATASTRO_COORDS_URL}?SRS=EPSG:4326&RC=${ref}`, fetchOptions)
     ]);
 
     if (!addressResponse.ok || !coordsResponse.ok) {
+      if (!addressResponse.ok) {
+        console.error(`Catastro address service failed with status: ${addressResponse.status}`);
+      }
+      if (!coordsResponse.ok) {
+        console.error(`Catastro coordinates service failed with status: ${coordsResponse.status}`);
+      }
       return { data: null, error: "No se pudo contactar con los servicios del Catastro. Inténtelo más tarde." };
     }
 
@@ -57,12 +70,12 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
 
     if (coordsXml.includes('<err>')) {
         const errorMessage = getErrorDescription(coordsXml);
-        return { data: null, error: `Error del Catastro: ${errorMessage}` };
+        return { data: null, error: `Error del Catastro (coordenadas): ${errorMessage}` };
     }
     
     if (addressXml.includes('<err>')) {
         const errorMessage = getErrorDescription(addressXml);
-        return { data: null, error: `Error del Catastro: ${errorMessage}` };
+        return { data: null, error: `Error del Catastro (dirección): ${errorMessage}` };
     }
 
     const address = parseXml<string>(addressXml, 'ldt');
@@ -103,8 +116,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     
     return { data: result, error: null };
 
-  } catch (e) {
-    console.error(e);
-    return { data: null, error: "Ocurrió un error inesperado durante la búsqueda. Por favor, revise la consola para más detalles." };
+  } catch (e: any) {
+    console.error("An unexpected error occurred during the search:", e);
+    return { data: null, error: `Ocurrió un error inesperado: ${e.message}. Por favor, revise la consola para más detalles.` };
   }
 }
