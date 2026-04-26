@@ -80,6 +80,7 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
         }
 
         if (leafletMap.current && currentPos) {
+            // Mantener el zoom actual del usuario si ya está navegando
             const currentZoom = leafletMap.current.getZoom();
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             
@@ -435,11 +436,11 @@ export default function CatastroSearch() {
                                           <LetraBadge letra={state.data.ieeGva.consumo} size="sm" />
                                         </div>
                                       )}
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 border-l-2 border-green-100 pl-4 py-1">
-                                      {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold flex items-center gap-2"><AlertTriangle className="h-3 w-3" /> {state.data.ieeGva.count_intu} intervenciones urgentes</span>}
-                                      {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold flex items-center gap-2"><Zap className="h-3 w-3" /> {state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
-                                      {state.data.ieeGva.count_intu === 0 && state.data.ieeGva.count_intm === 0 && <span className="text-xs text-green-600 font-medium">Sin intervenciones pendientes</span>}
+                                      <div className="flex flex-col gap-1.5 border-l-2 border-green-100 pl-4 py-1">
+                                        {state.data.ieeGva.count_intu! > 0 && <span className="text-xs text-red-600 font-bold flex items-center gap-2"><AlertTriangle className="h-3 w-3" /> {state.data.ieeGva.count_intu} intervenciones urgentes</span>}
+                                        {state.data.ieeGva.count_intm! > 0 && <span className="text-xs text-orange-600 font-bold flex items-center gap-2"><Zap className="h-3 w-3" /> {state.data.ieeGva.count_intm} intervenciones a corto plazo</span>}
+                                        {state.data.ieeGva.count_intu === 0 && state.data.ieeGva.count_intm === 0 && <span className="text-xs text-green-600 font-medium">Sin intervenciones pendientes</span>}
+                                      </div>
                                     </div>
                                   </div>
                                   {state.data.ieeGva.urlgesie && (
@@ -457,22 +458,22 @@ export default function CatastroSearch() {
                                           <Info className="h-4 w-4 text-blue-600" />
                                           <AlertTitle className="text-sm font-bold text-blue-800">No obligatorio por antigüedad</AlertTitle>
                                           <AlertDescription className="text-xs text-blue-700">
-                                            El edificio tiene {buildingAge} años. Según la normativa, el IEE no es obligatorio hasta alcanzar los 50 años de antigüedad.
+                                            El edificio tiene {buildingAge} años. Según la normativa vigente, el IEE no es obligatorio hasta que el inmueble alcance los 50 años desde su construcción.
                                           </AlertDescription>
                                         </Alert>
                                     ) : (
                                         <Alert className="bg-red-50/50 border-red-200">
                                           <AlertTriangle className="h-4 w-4 text-red-600" />
-                                          <AlertTitle className="text-sm font-bold text-red-800">Obligatoriedad de registro</AlertTitle>
+                                          <AlertTitle className="text-sm font-bold text-red-800">Obligatoriedad legal por antigüedad</AlertTitle>
                                           <AlertDescription className="text-xs text-red-700">
-                                            El edificio tiene {buildingAge} años. Al superar los 50 años, existe la <strong>obligatoriedad legal</strong> de disponer de un IEE registrado y en vigor.
+                                            El edificio tiene {buildingAge} años. Al superar el umbral de los 50 años, existe la <strong>obligatoriedad legal</strong> de disponer de un Informe de Evaluación del Edificio (IEE) registrado y en vigor.
                                           </AlertDescription>
                                         </Alert>
                                     )
                                 ) : (
                                     <Alert className="bg-white border-red-200">
                                       <AlertTriangle className="h-4 w-4 text-red-600" />
-                                      <AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado IEE registrado.</AlertDescription>
+                                      <AlertDescription className="text-sm text-red-700 font-medium">No se ha encontrado un Informe de Evaluación (IEE) registrado para este inmueble.</AlertDescription>
                                     </Alert>
                                 )
                               )}
@@ -509,7 +510,7 @@ export default function CatastroSearch() {
                                         </div>
                                       </div>
                                     </div>
-                                  ) : <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay certificado específico para esta unidad.</p>}
+                                  ) : <p className="text-xs text-muted-foreground italic bg-white p-3 rounded-md border">No hay certificado específico registrado para esta unidad catastral exacta.</p>}
 
                                   {state.data.ceeGva.others && state.data.ceeGva.others.length > 0 && (
                                     <Accordion type="single" collapsible className="w-full mt-2">
@@ -525,8 +526,7 @@ export default function CatastroSearch() {
                                               <thead>
                                                 <tr className="bg-slate-50 border-b">
                                                   <th className="px-4 py-3 text-left font-bold text-slate-700">Ref. catastral</th>
-                                                  <th className="px-4 py-3 text-center font-bold text-slate-700">Emisiones</th>
-                                                  <th className="px-4 py-3 text-center font-bold text-slate-700">Consumo</th>
+                                                  <th className="px-4 py-3 text-center font-bold text-slate-700">Calificación</th>
                                                   <th className="px-4 py-3 text-left font-bold text-slate-700">Válido hasta</th>
                                                   <th className="px-4 py-3"></th>
                                                 </tr>
@@ -536,15 +536,15 @@ export default function CatastroSearch() {
                                                   <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                                                     <td className="px-4 py-3 font-mono font-bold text-slate-600">{item.ref}</td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-center">
-                                                      <div className="flex items-center justify-center gap-2">
-                                                        <LetraBadge letra={item.emicalif} size="sm" />
-                                                        <span className="font-bold text-slate-700">{item.emitotal} kgCO₂</span>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-center">
-                                                      <div className="flex items-center justify-center gap-2">
-                                                        <LetraBadge letra={item.concalif} size="sm" />
-                                                        <span className="font-bold text-slate-700">{item.contotal} kWh</span>
+                                                      <div className="flex items-center justify-center gap-3">
+                                                        <div className="flex flex-col items-center">
+                                                          <span className="text-[8px] uppercase text-muted-foreground">Emisiones</span>
+                                                          <LetraBadge letra={item.emicalif} size="sm" />
+                                                        </div>
+                                                        <div className="flex flex-col items-center">
+                                                          <span className="text-[8px] uppercase text-muted-foreground">Consumo</span>
+                                                          <LetraBadge letra={item.concalif} size="sm" />
+                                                        </div>
                                                       </div>
                                                     </td>
                                                     <td className="px-4 py-3 font-medium text-slate-600">{item.validohasta}</td>
@@ -565,7 +565,7 @@ export default function CatastroSearch() {
                                     </Accordion>
                                   )}
                                 </div>
-                              ) : <Alert className="bg-white border-red-200"><AlertTriangle className="h-4 w-4 text-red-600" /><AlertDescription className="text-sm text-red-700 font-medium">No hay certificados registrados.</AlertDescription></Alert>}
+                              ) : <Alert className="bg-white border-red-200"><AlertTriangle className="h-4 w-4 text-red-600" /><AlertDescription className="text-sm text-red-700 font-medium">No se han encontrado certificados de eficiencia energética registrados.</AlertDescription></Alert>}
                             </div>
                           )}
                         </CardContent>

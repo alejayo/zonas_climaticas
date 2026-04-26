@@ -14,6 +14,7 @@ const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
 const parseXmlValue = (xml: string, tag: string): string | null => {
+  // Regex mejorada para ignorar namespaces (ej: ms:tag, gml:tag)
   const regex = new RegExp(`<([^/>]*?:)?${tag}[^>]*>([\\s\\S]*?)<\\/([^>]*?:)?${tag}>`, 'i');
   const match = xml.match(regex);
   if (match && match[2]) {
@@ -70,7 +71,7 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
       version: "1.1.0",
       request: "GetFeature",
       typeName: "CEEEdificios",
-      maxFeatures: "50",
+      maxFeatures: "100",
       FILTER: filter
     });
 
@@ -78,6 +79,7 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
     if (!response.ok) return null;
     const xml = await response.text();
     
+    // Separamos cada featureMember para procesarlos individualmente
     const featureRegex = /<[^>]*?featureMember[^>]*>([\s\S]*?)<\/[^>]*?featureMember>/gi;
     const members = xml.match(featureRegex) || [];
     
@@ -94,6 +96,7 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
       url: parseXmlValue(m, 'url_castellano') || undefined,
     }));
 
+    // El match exacto debe coincidir con la RC de 20 caracteres buscada
     const exactMatch = items.find(i => i.ref === rc20);
     const others = items.filter(i => i.ref !== rc20);
 
@@ -108,7 +111,7 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
   }
 }
 
-async function getFullData(displayRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
+export async function getFullData(displayRef: string, latitude: number, longitude: number): Promise<CatastroData | string> {
     const fetchOptions = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -136,37 +139,28 @@ async function getFullData(displayRef: string, latitude: number, longitude: numb
 
     let finalRef = displayRef;
 
-    const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
-    const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
-    if (rcCoordsRes.ok) {
-        const rcCoordsXml = await rcCoordsRes.text();
-        const pc1 = parseXmlValue(rcCoordsXml, 'pc1');
-        const pc2 = parseXmlValue(rcCoordsXml, 'pc2');
-        
-        if (pc1 && pc2) {
-            const childRef14 = pc1 + pc2;
-            const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${childRef14}`;
-            const childDataRes = await fetch(childDataUrl, fetchOptions);
-            if (childDataRes.ok) {
-                const childXml = await childDataRes.text();
-                const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
-                if (firstRcMatch) {
-                    const firstPc1 = parseXmlValue(firstRcMatch[0], 'pc1');
-                    const firstPc2 = parseXmlValue(firstRcMatch[0], 'pc2');
-                    const firstCar = parseXmlValue(firstRcMatch[0], 'car');
-                    const firstCc1 = parseXmlValue(firstRcMatch[0], 'cc1');
-                    const firstCc2 = parseXmlValue(firstRcMatch[0], 'cc2');
-                    
-                    if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
-                        const candidateRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                        if (finalRef.length < 20) finalRef = candidateRef;
-                        
-                        const specificDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
-                        const specificRes = await fetch(specificDataUrl, fetchOptions);
-                        if (specificRes.ok) {
-                            const specificXml = await specificRes.text();
-                            address = parseXmlValue(specificXml, 'ldt') || address;
-                            constructionYear = parseXmlValue(specificXml, 'ant') || constructionYear;
+    // Si la referencia original es de 14, intentamos encontrar la primera de 20 válida en esa parcela
+    if (displayRef.length === 14) {
+        const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
+        const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
+        if (rcCoordsRes.ok) {
+            const rcCoordsXml = await rcCoordsRes.text();
+            const pc1 = parseXmlValue(rcCoordsXml, 'pc1');
+            const pc2 = parseXmlValue(rcCoordsXml, 'pc2');
+            if (pc1 && pc2) {
+                const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${pc1}${pc2}`;
+                const childDataRes = await fetch(childDataUrl, fetchOptions);
+                if (childDataRes.ok) {
+                    const childXml = await childDataRes.text();
+                    const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
+                    if (firstRcMatch) {
+                        const firstPc1 = parseXmlValue(firstRcMatch[0], 'pc1');
+                        const firstPc2 = parseXmlValue(firstRcMatch[0], 'pc2');
+                        const firstCar = parseXmlValue(firstRcMatch[0], 'car');
+                        const firstCc1 = parseXmlValue(firstRcMatch[0], 'cc1');
+                        const firstCc2 = parseXmlValue(firstRcMatch[0], 'cc2');
+                        if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
+                            finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
                         }
                     }
                 }
