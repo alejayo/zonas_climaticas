@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 import type { ActionState, CatastroData } from '@/lib/types';
-import { geographicContextDescription } from '@/ai/flows/geographic-context-description';
 import { getIneCode, getClimaticZone } from '@/lib/provinces';
 
 const FormSchema = z.object({
@@ -13,17 +12,14 @@ const FormSchema = z.object({
     .regex(/^[A-Z0-9]+$/, "La referencia catastral solo puede contener letras mayúsculas y números."),
 });
 
-// Endpoints correctos basados en el ejemplo funcional del usuario
 const CATASTRO_COORDS_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_CPMRC';
 const CATASTRO_DATA_URL = 'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC';
 const ELEVATION_API_URL = 'https://api.open-meteo.com/v1/elevation';
 
 const parseXmlTag = (xml: string, tag: string): string | null => {
-  // Coincidencia no codiciosa para el contenido dentro de una etiqueta
   const regex = new RegExp(`<${tag}>(.*?)</${tag}>`);
   const match = xml.match(regex);
   if (match && match[1]) {
-      // Decode XML entities like &lt; &gt; &amp;
       return match[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   }
   return null;
@@ -50,11 +46,9 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         }
     };
     
-    // Ensure the URL parameters are correctly formatted, including empty ones.
     const coordsUrl = `${CATASTRO_COORDS_URL}?Provincia=&Municipio=&SRS=EPSG:4326&RC=${ref.substring(0, 14)}`;
     const dataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${ref}`;
 
-    // Realizar ambas peticiones en paralelo para mayor eficiencia
     const [coordsResponse, dataResponse] = await Promise.all([
       fetch(coordsUrl, fetchOptions),
       fetch(dataUrl, fetchOptions)
@@ -82,7 +76,6 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         return { data: null, error: `Error del Catastro (dirección): ${errorMessage}` };
     }
 
-    // Parse all required fields
     const longitudeStr = parseXmlTag(coordsXml, 'xcen');
     const latitudeStr = parseXmlTag(coordsXml, 'ycen');
     
@@ -91,6 +84,8 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     const province = parseXmlTag(dataXml, 'np');
     const postalCode = parseXmlTag(dataXml, 'dp');
     const constructionYear = parseXmlTag(dataXml, 'ant');
+    const provinceCode = parseXmlTag(dataXml, 'cp');
+    const municipalityCode = parseXmlTag(dataXml, 'cm');
 
     if (!address || !longitudeStr || !latitudeStr) {
       return { data: null, error: "No se encontraron datos completos para la referencia catastral proporcionada." };
@@ -103,10 +98,7 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         return { data: null, error: "Las coordenadas recibidas del Catastro no son válidas." };
     }
 
-    const [elevationResponse, aiDescriptionResponse] = await Promise.all([
-        fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
-        geographicContextDescription({ latitude, longitude })
-    ]);
+    const elevationResponse = await fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`);
 
     if (!elevationResponse.ok) {
         console.warn("Could not fetch elevation data.");
@@ -114,9 +106,9 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
     
     const elevationData = elevationResponse.ok ? await elevationResponse.json() : { elevation: [0] };
     const altitude = elevationData.elevation?.[0] ?? 0;
-    const aiDescription = aiDescriptionResponse.description;
 
-    const ineCode = province ? getIneCode(province) : null;
+    const provinceIneCode = province ? getIneCode(province) : null;
+    const municipalityIneCode = provinceCode && municipalityCode ? `${provinceCode}${municipalityCode}` : null;
     const climaticZoneInfo = province ? getClimaticZone(province, altitude) : null;
 
     const result: CatastroData = {
@@ -125,11 +117,11 @@ export async function searchCatastro(prevState: ActionState, formData: FormData)
         province,
         postalCode,
         constructionYear,
-        ineCode,
+        ineCode: provinceIneCode,
+        municipalityIneCode,
         latitude,
         longitude,
         altitude,
-        aiDescription,
         climaticZone: climaticZoneInfo?.zone,
         climaticZoneRule: climaticZoneInfo?.rule,
     };

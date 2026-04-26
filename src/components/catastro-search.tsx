@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Search, MapPin, Globe, Mountain, Sparkles, AlertTriangle, Building, Home, Calendar, Thermometer } from 'lucide-react';
+import { Loader2, Search, MapPin, Globe, Mountain, AlertTriangle, Building, Home, Calendar, Thermometer } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 const initialState: ActionState = { data: null, error: null };
@@ -58,11 +58,11 @@ function Results({ state }: { state: ActionState }) {
         );
     }
 
-    const { address, municipality, province, postalCode, constructionYear, ineCode, latitude, longitude, altitude, aiDescription, climaticZone, climaticZoneRule } = state.data;
+    const { address, municipality, province, postalCode, constructionYear, ineCode, municipalityIneCode, latitude, longitude, altitude, climaticZone, climaticZoneRule } = state.data;
     
     const catastroItems = [
         { icon: MapPin, label: "Dirección", value: address },
-        { icon: Home, label: "Municipio", value: municipality },
+        { icon: Home, label: "Municipio", value: municipality ? `${municipality} (INE: ${municipalityIneCode || 'N/A'})` : null },
         { icon: Building, label: "Provincia", value: province ? `${province} (INE: ${ineCode || 'N/A'})` : null },
         { icon: MapPin, label: "Código Postal", value: postalCode },
         { icon: Calendar, label: "Año Construcción", value: constructionYear },
@@ -133,18 +133,6 @@ function Results({ state }: { state: ActionState }) {
                             <p className="text-lg font-semibold text-foreground">{item.value}</p>
                         </div>
                     ))}
-                </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="text-accent" />
-                        <span className='text-primary'>Análisis Geográfico por IA</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-base leading-relaxed">{aiDescription}</p>
                 </CardContent>
             </Card>
         </div>

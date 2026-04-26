@@ -5,10 +5,10 @@ export type CatastroData = {
   postalCode: string | null;
   constructionYear: string | null;
   ineCode: string | null;
+  municipalityIneCode: string | null;
   latitude: number;
   longitude: number;
   altitude: number;
-  aiDescription: string;
   climaticZone?: string | null;
   climaticZoneRule?: string | null;
 };
