@@ -14,7 +14,6 @@ const GVA_IEE_WFS = 'https://terramapas.icv.gva.es/0801_GESIEE';
 const GVA_CEE_WFS = 'https://terramapas.icv.gva.es/26_GCEE';
 
 const parseXmlValue = (xml: string, tag: string): string | null => {
-  // Regex mejorada para ignorar namespaces (ej: ms:tag, gml:tag)
   const regex = new RegExp(`<([^/>]*?:)?${tag}[^>]*>([\\s\\S]*?)<\\/([^>]*?:)?${tag}>`, 'i');
   const match = xml.match(regex);
   if (match && match[2]) {
@@ -79,7 +78,6 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
     if (!response.ok) return null;
     const xml = await response.text();
     
-    // Separamos cada featureMember para procesarlos individualmente
     const featureRegex = /<[^>]*?featureMember[^>]*>([\s\S]*?)<\/[^>]*?featureMember>/gi;
     const members = xml.match(featureRegex) || [];
     
@@ -96,7 +94,6 @@ async function consultarCEE_GVA(rc14: string, rc20: string): Promise<CEEData | n
       url: parseXmlValue(m, 'url_castellano') || undefined,
     }));
 
-    // El match exacto debe coincidir con la RC de 20 caracteres buscada
     const exactMatch = items.find(i => i.ref === rc20);
     const others = items.filter(i => i.ref !== rc20);
 
@@ -120,6 +117,7 @@ export async function getFullData(displayRef: string, latitude: number, longitud
 
     const motherRef = displayRef.substring(0, 14);
     const motherDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${motherRef}`;
+    
     const [motherDataRes, elevationRes, ignRes] = await Promise.all([
         fetch(motherDataUrl, fetchOptions),
         fetch(`${ELEVATION_API_URL}?latitude=${latitude}&longitude=${longitude}`),
@@ -129,8 +127,6 @@ export async function getFullData(displayRef: string, latitude: number, longitud
     if (!motherDataRes.ok) return "No se pudo contactar con el Catastro.";
     const motherDataXml = await motherDataRes.text();
     
-    let address = parseXmlValue(motherDataXml, 'ldt');
-    let constructionYear = parseXmlValue(motherDataXml, 'ant');
     const municipality = parseXmlValue(motherDataXml, 'nm');
     const province = parseXmlValue(motherDataXml, 'np');
     const postalCode = parseXmlValue(motherDataXml, 'dp');
@@ -138,35 +134,37 @@ export async function getFullData(displayRef: string, latitude: number, longitud
     const municipalityCode = parseXmlValue(motherDataXml, 'cm');
 
     let finalRef = displayRef;
+    let address = null;
+    let constructionYear = null;
 
-    // Si la referencia original es de 14, intentamos encontrar la primera de 20 válida en esa parcela
+    // Lógica para obtener datos de un "hijo" si es necesario
     if (displayRef.length === 14) {
-        const rcCoordsUrl = `${CATASTRO_RC_BY_COORDS_URL}?SRS=EPSG:4326&Coordenada_X=${longitude}&Coordenada_Y=${latitude}`;
-        const rcCoordsRes = await fetch(rcCoordsUrl, fetchOptions);
-        if (rcCoordsRes.ok) {
-            const rcCoordsXml = await rcCoordsRes.text();
-            const pc1 = parseXmlValue(rcCoordsXml, 'pc1');
-            const pc2 = parseXmlValue(rcCoordsXml, 'pc2');
-            if (pc1 && pc2) {
-                const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${pc1}${pc2}`;
-                const childDataRes = await fetch(childDataUrl, fetchOptions);
-                if (childDataRes.ok) {
-                    const childXml = await childDataRes.text();
-                    const firstRcMatch = childXml.match(/<rc>(.*?)<\/rc>/s);
-                    if (firstRcMatch) {
-                        const firstPc1 = parseXmlValue(firstRcMatch[0], 'pc1');
-                        const firstPc2 = parseXmlValue(firstRcMatch[0], 'pc2');
-                        const firstCar = parseXmlValue(firstRcMatch[0], 'car');
-                        const firstCc1 = parseXmlValue(firstRcMatch[0], 'cc1');
-                        const firstCc2 = parseXmlValue(firstRcMatch[0], 'cc2');
-                        if (firstPc1 && firstPc2 && firstCar && firstCc1 && firstCc2) {
-                            finalRef = firstPc1 + firstPc2 + firstCar + firstCc1 + firstCc2;
-                        }
-                    }
-                }
+        // Buscamos el primer inmueble (rc) dentro del XML de la parcela
+        const firstRcMatch = motherDataXml.match(/<rc>([\s\S]*?)<\/rc>/i);
+        if (firstRcMatch) {
+            const pc1 = parseXmlValue(firstRcMatch[1], 'pc1');
+            const pc2 = parseXmlValue(firstRcMatch[1], 'pc2');
+            const car = parseXmlValue(firstRcMatch[1], 'car');
+            const cc1 = parseXmlValue(firstRcMatch[1], 'cc1');
+            const cc2 = parseXmlValue(firstRcMatch[1], 'cc2');
+            if (pc1 && pc2 && car && cc1 && cc2) {
+                finalRef = pc1 + pc2 + car + cc1 + cc2;
             }
         }
     }
+
+    // Consultamos los datos específicos del inmueble final (20 caracteres o el primero encontrado)
+    const childDataUrl = `${CATASTRO_DATA_URL}?Provincia=&Municipio=&RC=${finalRef}`;
+    const childDataRes = await fetch(childDataUrl, fetchOptions);
+    if (childDataRes.ok) {
+        const childXml = await childDataRes.text();
+        address = parseXmlValue(childXml, 'ldt');
+        constructionYear = parseXmlValue(childXml, 'ant');
+    }
+
+    // Fallback a los datos de la "madre" si falló lo anterior
+    if (!address) address = parseXmlValue(motherDataXml, 'ldt');
+    if (!constructionYear) constructionYear = parseXmlValue(motherDataXml, 'ant');
 
     const elevationData = elevationRes.ok ? await elevationRes.json() : { elevation: [0] };
     const altitude = elevationData.elevation?.[0] ?? 0;
