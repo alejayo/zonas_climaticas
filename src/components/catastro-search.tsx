@@ -80,7 +80,6 @@ const MapView = ({ onLocationSelect, currentPos }: { onLocationSelect: (lat: num
         }
 
         if (leafletMap.current && currentPos) {
-            // Mantener el zoom actual del usuario si ya está navegando
             const currentZoom = leafletMap.current.getZoom();
             const targetZoom = currentZoom <= 6 ? 16 : currentZoom;
             

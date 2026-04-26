@@ -10,7 +10,7 @@ export default async function Home(props: { searchParams: Promise<{ embed?: stri
         {!isEmbed && (
           <header className="text-center">
             <h1 className="text-4xl font-bold text-primary tracking-tight lg:text-5xl">
-              Zonas climaticas España
+              Zonas climáticas España
             </h1>
           </header>
         )}
